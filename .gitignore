@@ -1,2 +1,7 @@
 .superpowers/
 .worktrees/
+node_modules/
+.next/
+.env
+storage/
+prisma/dev.db*
