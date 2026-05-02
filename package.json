@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@xmldom/xmldom": "^0.9.10",
     "docx": "^9.0.0",
+    "jszip": "^3.10.1",
     "mammoth": "^1.8.0",
     "next": "^15.0.0",
     "openai": "^5.0.0",
