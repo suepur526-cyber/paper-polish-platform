@@ -14,6 +14,18 @@ npm.cmd run dev
 
 打开 `http://localhost:3000`。
 
+## 模型配置
+
+没有配置模型 key 时，系统会使用本地 mock 润色器，方便开发和测试。部署或本地联调真实模型时，按 `.env.example` 设置：
+
+```powershell
+$env:OPENAI_BASE_URL="https://allinai7.cloud/v1"
+$env:OPENAI_REWRITE_MODEL="gpt-5.5"
+$env:OPENAI_API_KEY="你的服务商 key"
+```
+
+`OPENAI_API_KEY` 不要提交到 GitHub。模型请求会带 `store: false`。
+
 如果 Windows 环境下 Prisma 迁移出现空的 `Schema engine error`，可临时打开 engine 日志后重试：
 
 ```powershell
