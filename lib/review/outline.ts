@@ -34,7 +34,7 @@ export function buildOutlineSections(paragraphs: readonly ReviewParagraph[]) {
   for (const paragraph of [...paragraphs].sort((a, b) => a.index - b.index)) {
     if (paragraph.type === "heading") {
       current = createSection(paragraph.id, paragraph.originalText);
-      sections.push(current);
+      if (!isHiddenOutlineHeading(paragraph.originalText)) sections.push(current);
     } else if (!current) {
       current = createSection("intro", "未分章节");
       sections.push(current);
@@ -85,4 +85,8 @@ function createSection(id: string, title: string): OutlineSection {
     selectedCount: 0,
     skippedCount: 0
   };
+}
+
+function isHiddenOutlineHeading(title: string) {
+  return /^(目录|Contents?)$/i.test(title.replace(/\s/g, "").trim());
 }

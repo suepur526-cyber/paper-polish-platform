@@ -98,6 +98,80 @@ describe("outline review helpers", () => {
     ]);
   });
 
+  it("keeps hidden table-of-contents entries out of visible outline sections", () => {
+    const sections = buildOutlineSections([
+      {
+        id: "abstract-heading",
+        index: 0,
+        type: "heading",
+        outlinePath: "摘 要",
+        originalText: "摘 要",
+        selected: false,
+        status: "skipped",
+        skipReason: "标题默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "abstract-body",
+        index: 1,
+        type: "abstract",
+        outlinePath: "摘 要",
+        originalText: "本文设计了一套系统。",
+        selected: true,
+        status: "selected",
+        skipReason: null,
+        riskLevel: "low",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "toc-heading",
+        index: 2,
+        type: "heading",
+        outlinePath: "目 录",
+        originalText: "目 录",
+        selected: false,
+        status: "skipped",
+        skipReason: "目录标题默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "toc-entry",
+        index: 3,
+        type: "skipped",
+        outlinePath: "目 录",
+        originalText: "1 引言 1",
+        selected: false,
+        status: "skipped",
+        skipReason: "目录内容默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "body-heading",
+        index: 4,
+        type: "heading",
+        outlinePath: "1 引言",
+        originalText: "1 引言",
+        selected: false,
+        status: "skipped",
+        skipReason: "标题默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      }
+    ]);
+
+    expect(sections.map((section) => section.title)).toEqual(["摘 要", "1 引言"]);
+    expect(sections[0].paragraphIds).toEqual(["abstract-heading", "abstract-body"]);
+    expect(sections[1].paragraphIds).toEqual(["body-heading"]);
+  });
+
   it("filters paragraphs for a selected section", () => {
     const sections = buildOutlineSections(paragraphs);
     const visible = getParagraphsForSection(paragraphs, sections[1].id);

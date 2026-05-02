@@ -1,5 +1,14 @@
 import mammoth from "mammoth";
-import { classifyParagraph } from "@/lib/document/classifier";
+import {
+  classifyParagraph,
+  isAbstractHeading,
+  isKeywordsLine,
+  isLikelyHeading,
+  isReferenceHeading,
+  isTocEntry,
+  isTocHeading,
+  type DocumentPhase
+} from "@/lib/document/classifier";
 
 export type ParsedParagraph = {
   outlinePath: string;
@@ -26,10 +35,31 @@ export async function parseDocxParagraphs(filePath: string): Promise<ParsedParag
     .map((line) => line.trim())
     .filter(Boolean);
 
+  let phase: DocumentPhase = "frontMatter";
+  let currentHeading = "未分章节";
+
   return lines.map((text, index) => {
-    const classification = classifyParagraph({ text, index });
+    if (isTocHeading(text)) {
+      phase = "toc";
+    } else if (phase === "toc" && isLikelyHeading(text) && !isTocEntry(text)) {
+      phase = "body";
+    } else if (isReferenceHeading(text)) {
+      phase = "references";
+    } else if (isAbstractHeading(text)) {
+      phase = "abstract";
+    } else if (phase === "abstract" && isKeywordsLine(text)) {
+      phase = "frontMatter";
+    } else if (phase === "frontMatter" && isLikelyHeading(text) && !isTocEntry(text)) {
+      phase = "body";
+    }
+
+    const classification = classifyParagraph({ text, index, phase });
+    if (classification.type === "heading" && !isTocHeading(text) && !isAbstractHeading(text)) {
+      currentHeading = text.slice(0, 60);
+    }
+
     return {
-      outlinePath: buildOutlinePath(text, index, classification.type),
+      outlinePath: buildOutlinePath(text, index, classification.type, currentHeading),
       index,
       text,
       type: classification.type,
@@ -42,7 +72,7 @@ export async function parseDocxParagraphs(filePath: string): Promise<ParsedParag
   });
 }
 
-function buildOutlinePath(text: string, index: number, type: string) {
+function buildOutlinePath(text: string, index: number, type: string, currentHeading: string) {
   if (type === "heading") return text.slice(0, 60);
-  return `段落 ${index + 1}`;
+  return currentHeading || `段落 ${index + 1}`;
 }
