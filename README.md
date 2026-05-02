@@ -26,7 +26,7 @@ $env:OPENAI_API_KEY="你的服务商 key"
 
 `OPENAI_API_KEY` 不要提交到 GitHub。模型请求会带 `store: false`。
 
-如果 Windows 环境下 Prisma 迁移出现空的 `Schema engine error`，可临时打开 engine 日志后重试：
+如果 Windows 环境中 Prisma 迁移出现空的 `Schema engine error`，可临时打开 engine 日志后重试：
 
 ```powershell
 $env:RUST_BACKTRACE="full"
