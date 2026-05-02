@@ -17,3 +17,10 @@ export async function saveUploadFile(taskId: string, fileName: string, bytes: Ar
 
   return path.join("storage", "tasks", taskId, fileName);
 }
+
+export async function writeTaskFile(taskId: string, fileName: string, content: string | Buffer) {
+  const taskDir = await ensureTaskDir(taskId);
+  const filePath = path.join(taskDir, fileName);
+  await writeFile(filePath, content);
+  return path.join("storage", "tasks", taskId, fileName);
+}
