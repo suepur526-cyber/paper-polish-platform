@@ -1,12 +1,14 @@
 "use client";
 
+import React from "react";
 import { useState } from "react";
+import { TaskReview } from "@/components/task-review";
 
 export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => void }) {
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
-  async function run(taskId: string, action: "outline" | "rewrite" | "export") {
+  async function run(taskId: string, action: "outline" | "export") {
     setBusyTaskId(taskId);
     setBusyAction(action);
     try {
@@ -39,13 +41,6 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
               </button>
               <button
                 className="rounded border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!canRewrite(task.status) || busyTaskId === task.id}
-                onClick={() => run(task.id, "rewrite")}
-              >
-                {busyTaskId === task.id && busyAction === "rewrite" ? "润色中..." : "开始润色"}
-              </button>
-              <button
-                className="rounded border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!canExport(task.status) || busyTaskId === task.id}
                 onClick={() => run(task.id, "export")}
               >
@@ -53,6 +48,9 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
               </button>
             </div>
           </div>
+
+          {task.status === "awaiting_review" ? <TaskReview task={task} onChanged={onChanged} /> : null}
+
           {task.status === "completed" ? (
             <div className="mt-3 flex flex-wrap gap-2 border-t pt-3 text-sm">
               <a className="rounded bg-slate-950 px-3 py-2 text-white" href={`/api/tasks/${task.id}/files/docx`}>
@@ -74,10 +72,6 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
 
 function canParse(status: string) {
   return ["uploaded", "failed"].includes(status);
-}
-
-function canRewrite(status: string) {
-  return ["awaiting_review", "awaiting_manual_decision"].includes(status);
 }
 
 function canExport(status: string) {
