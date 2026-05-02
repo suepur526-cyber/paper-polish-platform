@@ -2,8 +2,10 @@ import mammoth from "mammoth";
 import {
   classifyParagraph,
   isAbstractHeading,
+  isBackMatterHeading,
   isKeywordsLine,
   isLikelyHeading,
+  isReferenceEntry,
   isReferenceHeading,
   isTocEntry,
   isTocHeading,
@@ -45,6 +47,10 @@ export async function parseDocxParagraphs(filePath: string): Promise<ParsedParag
       phase = "body";
     } else if (isReferenceHeading(text)) {
       phase = "references";
+    } else if (isBackMatterHeading(text)) {
+      phase = "backMatter";
+    } else if (phase === "body" && isReferenceEntry(text)) {
+      phase = "references";
     } else if (isAbstractHeading(text)) {
       phase = "abstract";
     } else if (phase === "abstract" && isKeywordsLine(text)) {
@@ -54,7 +60,13 @@ export async function parseDocxParagraphs(filePath: string): Promise<ParsedParag
     }
 
     const classification = classifyParagraph({ text, index, phase });
-    if (classification.type === "heading" && !isTocHeading(text) && !isAbstractHeading(text)) {
+    if (
+      classification.type === "heading" &&
+      !isTocHeading(text) &&
+      !isAbstractHeading(text) &&
+      !isReferenceHeading(text) &&
+      !isBackMatterHeading(text)
+    ) {
       currentHeading = text.slice(0, 60);
     }
 

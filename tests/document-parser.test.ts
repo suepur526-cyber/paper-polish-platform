@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   classifyParagraph,
   detectNumberingPrefix,
+  isCaptionLine,
+  isReferenceEntry,
   isLikelyHeading,
   isTocEntry,
   shouldSkipParagraph
@@ -88,5 +90,45 @@ describe("document classifier", () => {
         phase: "body"
       })
     ).toMatchObject({ type: "body", selected: true });
+  });
+
+  it("keeps references and back matter out of rewriting", () => {
+    expect(isReferenceEntry("张傲,刘微,刘阳,等. 基于YOLO-BioFusion的血细胞YOLOv8模型[J].电子测量技术,2025,48(18):177-188.")).toBe(
+      true
+    );
+    expect(isReferenceEntry("Ni R,Xu S,Chen H,et al. An effective detection model based on YOLOv8 for blood cell detection[J].Frontiers in Oncology,2024,14:1369561.")).toBe(
+      true
+    );
+    expect(
+      classifyParagraph({
+        text: "张傲,刘微,刘阳,等. 基于YOLO-BioFusion的血细胞YOLOv8模型[J].电子测量技术,2025,48(18):177-188.",
+        index: 640,
+        phase: "body"
+      })
+    ).toMatchObject({ type: "reference", selected: false });
+    expect(classifyParagraph({ text: "致    谢", index: 657, phase: "body" })).toMatchObject({
+      type: "skipped",
+      selected: false
+    });
+    expect(
+      classifyParagraph({
+        text: "感谢老师的教导，言辞虽然有限，但心意却在心中传递。",
+        index: 658,
+        phase: "backMatter"
+      })
+    ).toMatchObject({ type: "skipped", selected: false });
+  });
+
+  it("skips spaced reference headings and figure/table captions", () => {
+    expect(classifyParagraph({ text: "参  考  文  献", index: 641 })).toMatchObject({
+      type: "reference",
+      selected: false
+    });
+    expect(isCaptionLine("图6.1 医生检测功能界面图")).toBe(true);
+    expect(isCaptionLine("表4.2 用户信息表")).toBe(true);
+    expect(classifyParagraph({ text: "图6.1 医生检测功能界面图", index: 630 })).toMatchObject({
+      type: "skipped",
+      selected: false
+    });
   });
 });

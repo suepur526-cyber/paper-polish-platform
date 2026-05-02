@@ -6,7 +6,13 @@ export type ParagraphClassification = {
   numberingPrefix: string | null;
 };
 
-export type DocumentPhase = "frontMatter" | "abstract" | "toc" | "body" | "references";
+export type DocumentPhase =
+  | "frontMatter"
+  | "abstract"
+  | "toc"
+  | "body"
+  | "references"
+  | "backMatter";
 
 export function detectNumberingPrefix(text: string) {
   const match = text.match(/^(\s*(?:（\d+）|\(\d+\)|\d+[.)）]|[①②③④⑤⑥⑦⑧⑨⑩]))/);
@@ -32,7 +38,31 @@ export function isTocHeading(text: string) {
 }
 
 export function isReferenceHeading(text: string) {
-  return /^(参考文献|References)$/i.test(normalizeParagraphText(text));
+  const normalized = normalizeParagraphText(text).replace(/\s/g, "");
+  return /^(参考文献|References)$/i.test(normalized);
+}
+
+export function isBackMatterHeading(text: string) {
+  const normalized = normalizeParagraphText(text).replace(/\s/g, "");
+  return /^(致谢|谢辞|附录|Appendix|Acknowledgements?)$/i.test(normalized);
+}
+
+export function isReferenceEntry(text: string) {
+  const normalized = normalizeParagraphText(text);
+  return (
+    /^\[\d+\]\s*\S+/.test(normalized) ||
+    /^[\u4e00-\u9fa5A-Za-z][^。！？!?]{0,40}(?:,|，).+\[(?:J|D|M|C|OL|J\/OL|EB\/OL)\]/i.test(
+      normalized
+    ) ||
+    /^[A-Z][A-Za-z-]+(?:\s+[A-Z]\.?|,\s*[A-Z][A-Za-z-]+).+\[(?:J|D|M|C|OL|J\/OL|EB\/OL)\]/i.test(
+      normalized
+    )
+  );
+}
+
+export function isCaptionLine(text: string) {
+  const normalized = normalizeParagraphText(text);
+  return /^(图|表)\s*\d+(?:\.\d+)*\s+\S{1,40}$/.test(normalized);
 }
 
 export function isTocEntry(text: string) {
@@ -69,7 +99,14 @@ export function isFrontMatterLine(text: string) {
 export function isLikelyHeading(text: string, styleName = "") {
   const normalized = normalizeParagraphText(text);
   if (!normalized || isTocEntry(normalized) || isKeywordsLine(normalized)) return false;
-  if (isAbstractHeading(normalized) || isTocHeading(normalized) || isReferenceHeading(normalized)) return true;
+  if (
+    isAbstractHeading(normalized) ||
+    isTocHeading(normalized) ||
+    isReferenceHeading(normalized) ||
+    isBackMatterHeading(normalized)
+  ) {
+    return true;
+  }
 
   const hasSentencePunctuation = /[，,。；;：:？！?!]$/.test(normalized);
   const tooLong = normalized.length > 36;
@@ -86,6 +123,9 @@ export function shouldSkipParagraph(text: string, phase: DocumentPhase = "body")
   if (!normalized) return "空段落默认跳过";
   if (phase === "toc" || isTocHeading(normalized) || isTocEntry(normalized)) return "目录内容默认跳过";
   if (phase === "references" || isReferenceHeading(normalized)) return "参考文献默认跳过";
+  if (phase === "backMatter" || isBackMatterHeading(normalized)) return "致谢、附录等后置内容默认跳过";
+  if (isReferenceEntry(normalized)) return "疑似参考文献条目默认跳过";
+  if (isCaptionLine(normalized)) return "图表题注默认跳过";
   if (phase === "frontMatter" || isFrontMatterLine(normalized)) return "封面、声明或论文元数据默认跳过";
   if (isKeywordsLine(normalized)) return "关键词行需在摘要润色后确认更新";
   if (normalized.length < 12) return "疑似标题或短标签，默认跳过";
@@ -103,11 +143,21 @@ export function classifyParagraph(input: {
   const phase = input.phase ?? "body";
   const numberingPrefix = detectNumberingPrefix(text);
 
-  if (isReferenceHeading(text) || phase === "references") {
+  if (isReferenceHeading(text) || phase === "references" || isReferenceEntry(text)) {
     return {
       type: "reference",
       selected: false,
       skipReason: "参考文献默认跳过",
+      riskLevel: "medium",
+      numberingPrefix
+    };
+  }
+
+  if (phase === "backMatter" || isBackMatterHeading(text)) {
+    return {
+      type: "skipped",
+      selected: false,
+      skipReason: "致谢、附录等后置内容默认跳过",
       riskLevel: "medium",
       numberingPrefix
     };
