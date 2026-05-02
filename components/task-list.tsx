@@ -49,7 +49,9 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
             </div>
           </div>
 
-          {task.status === "awaiting_review" ? <TaskReview task={task} onChanged={onChanged} /> : null}
+          {task.status === "awaiting_review" && Array.isArray(task.paragraphs) ? (
+            <TaskReview task={task} onChanged={onChanged} />
+          ) : null}
 
           {task.status === "completed" ? (
             <div className="mt-3 flex flex-wrap gap-2 border-t pt-3 text-sm">

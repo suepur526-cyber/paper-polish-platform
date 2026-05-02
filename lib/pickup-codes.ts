@@ -42,7 +42,7 @@ export async function findActivePickupCode(code: string) {
   const now = new Date();
   const record = await prisma.pickupCode.findUnique({
     where: { code },
-    include: { tasks: { orderBy: { createdAt: "desc" } } }
+    include: { tasks: taskListInclude }
   });
 
   if (!record || record.deletedAt || record.expiresAt <= now) {
@@ -52,9 +52,14 @@ export async function findActivePickupCode(code: string) {
   return prisma.pickupCode.update({
     where: { id: record.id },
     data: { lastAccessAt: now },
-    include: { tasks: { orderBy: { createdAt: "desc" } } }
+    include: { tasks: taskListInclude }
   });
 }
+
+export const taskListInclude = {
+  orderBy: { createdAt: "desc" as const },
+  include: { paragraphs: { orderBy: { index: "asc" as const } } }
+};
 
 function isUniqueConstraintError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";

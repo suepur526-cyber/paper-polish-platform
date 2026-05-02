@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPickupCodeValue, getExpiryDate } from "@/lib/pickup-codes";
+import { createPickupCodeValue, getExpiryDate, taskListInclude } from "@/lib/pickup-codes";
 
 describe("pickup code helpers", () => {
   it("creates readable random codes with no ambiguous characters", () => {
@@ -16,5 +16,12 @@ describe("pickup code helpers", () => {
     const expires = getExpiryDate(base);
 
     expect(expires.toISOString()).toBe("2026-05-09T00:00:00.000Z");
+  });
+
+  it("loads task paragraphs for review workspaces", () => {
+    expect(taskListInclude).toEqual({
+      orderBy: { createdAt: "desc" },
+      include: { paragraphs: { orderBy: { index: "asc" } } }
+    });
   });
 });
