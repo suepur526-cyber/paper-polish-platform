@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model PickupCode {
+  id           String      @id @default(cuid())
+  code         String      @unique
+  createdAt    DateTime    @default(now())
+  lastAccessAt DateTime    @default(now())
+  expiresAt    DateTime
+  deletedAt    DateTime?
+  tasks        PaperTask[]
+}
+
+model PaperTask {
+  id              String            @id @default(cuid())
+  pickupCodeId    String
+  pickupCode      PickupCode        @relation(fields: [pickupCodeId], references: [id])
+  originalName    String
+  originalPath    String
+  workingDocxPath String?
+  status          String
+  progress        Int               @default(0)
+  errorMessage    String?
+  reportPath      String?
+  comparisonPath  String?
+  exportDocxPath  String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  paragraphs      ParagraphRecord[]
+}
+
+model ParagraphRecord {
+  id              String    @id @default(cuid())
+  taskId          String
+  task            PaperTask @relation(fields: [taskId], references: [id])
+  outlinePath     String
+  index           Int
+  type            String
+  originalText    String
+  rewrittenText   String?
+  selected        Boolean   @default(false)
+  status          String
+  skipReason      String?
+  riskLevel       String
+  citationCount   Int       @default(0)
+  numberingPrefix String?
+  retryCount      Int       @default(0)
+  validationJson  String?
+}

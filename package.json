@@ -8,7 +8,10 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
