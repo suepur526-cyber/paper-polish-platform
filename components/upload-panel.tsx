@@ -25,10 +25,10 @@ export function UploadPanel({
   }
 
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <div className="min-w-0 rounded-lg border bg-white p-4">
       <label className="block text-sm font-medium">上传论文</label>
       <input
-        className="mt-3 block w-full"
+        className="mt-3 block w-full min-w-0 max-w-full"
         type="file"
         accept=".doc,.docx"
         multiple

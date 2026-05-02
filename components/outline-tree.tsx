@@ -13,9 +13,9 @@ export function OutlineTree({
   onSelect: (sectionId: string) => void;
 }) {
   return (
-    <nav className="grid gap-2 md:sticky md:top-4">
+    <nav className="grid min-w-0 gap-2 md:sticky md:top-4">
       <h4 className="text-sm font-semibold text-slate-700">论文大纲</h4>
-      <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:overflow-visible md:pb-0">
+      <div className="flex min-w-0 gap-2 overflow-x-auto pb-1 md:grid md:overflow-visible md:pb-0">
         {sections.map((section) => {
           const active = section.id === activeSectionId;
           return (

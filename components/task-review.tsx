@@ -87,7 +87,7 @@ export function TaskReview({ task, onChanged }: { task: ReviewTask; onChanged: (
   }
 
   return (
-    <section className="mt-4 border-t pt-4">
+    <section className="mt-4 min-w-0 border-t pt-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h4 className="font-semibold">大纲审阅</h4>
@@ -120,7 +120,7 @@ export function TaskReview({ task, onChanged }: { task: ReviewTask; onChanged: (
         </p>
       ) : null}
       {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
-      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+      <div className="grid min-w-0 gap-4 md:grid-cols-[240px_1fr]">
         <OutlineTree sections={sections} activeSectionId={activeSectionId} onSelect={setActiveSectionId} />
         <ParagraphReviewList paragraphs={activeParagraphs} selectedMap={selectedMap} onToggle={toggle} />
       </div>

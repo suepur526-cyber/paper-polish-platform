@@ -30,13 +30,13 @@ export function ParagraphReviewList({
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid min-w-0 gap-3">
       {paragraphs.map((paragraph) => {
         const selectable = canSelectParagraph(paragraph);
         const checked = Boolean(selectedMap[paragraph.id]);
         return (
-          <article key={paragraph.id} className="rounded-lg border bg-white p-3">
-            <div className="flex items-start gap-3">
+          <article key={paragraph.id} className="min-w-0 rounded-lg border bg-white p-3">
+            <div className="flex min-w-0 items-start gap-3">
               {selectable ? (
                 <input
                   aria-label={paragraph.originalText}
@@ -57,7 +57,7 @@ export function ParagraphReviewList({
                   <span>引用 {paragraph.citationCount}</span>
                   {paragraph.numberingPrefix ? <span>编号保护：{paragraph.numberingPrefix}</span> : null}
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-800 [overflow-wrap:anywhere]">
                   {paragraph.originalText}
                 </p>
                 {!selectable && paragraph.skipReason ? (

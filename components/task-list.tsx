@@ -21,12 +21,12 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid min-w-0 gap-3">
       {tasks.map((task) => (
-        <article key={task.id} className="rounded-lg border bg-white p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="font-medium">{task.originalName}</h3>
+        <article key={task.id} className="min-w-0 rounded-lg border bg-white p-4">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="break-words font-medium">{task.originalName}</h3>
               <p className="text-sm text-slate-500">
                 状态：{task.status} · 进度：{task.progress}%
               </p>

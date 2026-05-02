@@ -25,7 +25,7 @@ export function TaskSpace({ code, onExit }: { code: string; onExit: () => void }
   }
 
   return (
-    <section className="grid gap-4">
+    <section className="grid min-w-0 gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-slate-500">当前取件码</p>
