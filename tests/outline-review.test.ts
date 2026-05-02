@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   buildOutlineSections,
+  buildOutlineTree,
   canSelectParagraph,
   countReviewStats,
+  getOutlineLevel,
   getParagraphsForSection
 } from "@/lib/review/outline";
 
@@ -196,5 +198,30 @@ describe("outline review helpers", () => {
       manualDecision: 0,
       selectable: 3
     });
+  });
+
+  it("derives outline levels from heading numbers", () => {
+    expect(getOutlineLevel("未分章节")).toBe(0);
+    expect(getOutlineLevel("1 引言")).toBe(1);
+    expect(getOutlineLevel("1.2 国内外研究现状")).toBe(2);
+    expect(getOutlineLevel("1.2.1 国内研究现状")).toBe(3);
+    expect(getOutlineLevel("第一章 绪论")).toBe(1);
+    expect(getOutlineLevel("第一节 研究背景")).toBe(2);
+  });
+
+  it("builds nested outline tree from heading levels", () => {
+    const sections = [
+      { id: "intro", title: "未分章节", level: 0, paragraphIds: [], totalCount: 1, selectedCount: 0, skippedCount: 1 },
+      { id: "one", title: "1 引言", level: 1, paragraphIds: [], totalCount: 3, selectedCount: 1, skippedCount: 1 },
+      { id: "one-two", title: "1.2 国内外研究现状", level: 2, paragraphIds: [], totalCount: 1, selectedCount: 0, skippedCount: 1 },
+      { id: "one-two-one", title: "1.2.1 国内研究现状", level: 3, paragraphIds: [], totalCount: 3, selectedCount: 2, skippedCount: 1 },
+      { id: "two", title: "2 理论与技术基础", level: 1, paragraphIds: [], totalCount: 1, selectedCount: 0, skippedCount: 1 }
+    ];
+
+    const tree = buildOutlineTree(sections);
+
+    expect(tree.map((node) => node.id)).toEqual(["intro", "one", "two"]);
+    expect(tree[1].children.map((node) => node.id)).toEqual(["one-two"]);
+    expect(tree[1].children[0].children.map((node) => node.id)).toEqual(["one-two-one"]);
   });
 });

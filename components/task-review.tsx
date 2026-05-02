@@ -120,7 +120,7 @@ export function TaskReview({ task, onChanged }: { task: ReviewTask; onChanged: (
         </p>
       ) : null}
       {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
-      <div className="grid min-w-0 gap-4 md:grid-cols-[240px_1fr]">
+      <div className="grid min-w-0 items-start gap-4 md:grid-cols-[280px_minmax(0,1fr)]">
         <OutlineTree sections={sections} activeSectionId={activeSectionId} onSelect={setActiveSectionId} />
         <ParagraphReviewList paragraphs={activeParagraphs} selectedMap={selectedMap} onToggle={toggle} />
       </div>

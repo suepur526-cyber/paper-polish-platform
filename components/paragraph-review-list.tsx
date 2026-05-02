@@ -30,38 +30,38 @@ export function ParagraphReviewList({
   }
 
   return (
-    <div className="grid min-w-0 gap-3">
+    <div className="grid h-fit min-w-0 content-start gap-2">
       {paragraphs.map((paragraph) => {
         const selectable = canSelectParagraph(paragraph);
         const checked = Boolean(selectedMap[paragraph.id]);
         return (
-          <article key={paragraph.id} className="min-w-0 rounded-lg border bg-white p-3">
-            <div className="flex min-w-0 items-start gap-3">
+          <article key={paragraph.id} className="min-w-0 rounded-md border bg-white px-3 py-2">
+            <div className="flex min-w-0 items-start gap-2.5">
               {selectable ? (
                 <input
                   aria-label={paragraph.originalText}
                   checked={checked}
-                  className="mt-1 size-4"
+                  className="mt-1 size-4 shrink-0"
                   onChange={(event) => onToggle(paragraph.id, event.target.checked)}
                   type="checkbox"
                 />
               ) : (
-                <span className="mt-0.5 rounded bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                <span className="mt-0.5 shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
                   跳过
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
                   <span>{typeLabels[paragraph.type] ?? paragraph.type}</span>
                   <span>风险 {paragraph.riskLevel}</span>
                   <span>引用 {paragraph.citationCount}</span>
                   {paragraph.numberingPrefix ? <span>编号保护：{paragraph.numberingPrefix}</span> : null}
                 </div>
-                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-800 [overflow-wrap:anywhere]">
+                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-slate-800 [overflow-wrap:anywhere]">
                   {paragraph.originalText}
                 </p>
                 {!selectable && paragraph.skipReason ? (
-                  <p className="mt-2 text-xs text-slate-500">跳过：{paragraph.skipReason}</p>
+                  <p className="mt-1 text-xs text-slate-500">跳过：{paragraph.skipReason}</p>
                 ) : null}
               </div>
             </div>

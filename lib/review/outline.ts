@@ -19,6 +19,11 @@ export type OutlineSection = {
   totalCount: number;
   selectedCount: number;
   skippedCount: number;
+  level: number;
+};
+
+export type OutlineTreeNode = OutlineSection & {
+  children: OutlineTreeNode[];
 };
 
 const SELECTABLE_TYPES = new Set(["body", "abstract"]);
@@ -76,6 +81,31 @@ export function countReviewStats(paragraphs: readonly ReviewParagraph[]) {
   );
 }
 
+export function buildOutlineTree(sections: readonly OutlineSection[]) {
+  const roots: OutlineTreeNode[] = [];
+  const stack: OutlineTreeNode[] = [];
+
+  for (const section of sections) {
+    const node: OutlineTreeNode = { ...section, children: [] };
+    const level = Math.max(0, section.level);
+
+    while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+      stack.pop();
+    }
+
+    const parent = level > 0 ? stack[stack.length - 1] : null;
+    if (parent) {
+      parent.children.push(node);
+    } else {
+      roots.push(node);
+    }
+
+    if (level > 0) stack.push(node);
+  }
+
+  return roots;
+}
+
 function createSection(id: string, title: string): OutlineSection {
   return {
     id,
@@ -83,10 +113,20 @@ function createSection(id: string, title: string): OutlineSection {
     paragraphIds: [],
     totalCount: 0,
     selectedCount: 0,
-    skippedCount: 0
+    skippedCount: 0,
+    level: getOutlineLevel(title)
   };
 }
 
 function isHiddenOutlineHeading(title: string) {
   return /^(目录|Contents?)$/i.test(title.replace(/\s/g, "").trim());
+}
+
+export function getOutlineLevel(title: string) {
+  const normalized = title.trim();
+  const numeric = normalized.match(/^(\d+(?:\.\d+)*)\b/);
+  if (numeric) return numeric[1].split(".").length;
+  if (/^第[一二三四五六七八九十\d]+章(?:\s|$)/.test(normalized)) return 1;
+  if (/^第[一二三四五六七八九十\d]+节(?:\s|$)/.test(normalized)) return 2;
+  return 0;
 }
