@@ -8,10 +8,18 @@ export function PickupCodeEntry({ onEnter }: { onEnter: (code: string) => void }
 
   async function createCode() {
     setError(null);
-    const response = await fetch("/api/pickup-codes", { method: "POST" });
-    const data = await response.json();
-    localStorage.setItem("activePickupCode", data.code);
-    onEnter(data.code);
+    try {
+      const response = await fetch("/api/pickup-codes", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok || !data.code) {
+        setError(data.error ?? "创建取件码失败，请稍后重试");
+        return;
+      }
+      localStorage.setItem("activePickupCode", data.code);
+      onEnter(data.code);
+    } catch {
+      setError("创建取件码失败，请检查服务是否正常运行");
+    }
   }
 
   async function enterCode() {

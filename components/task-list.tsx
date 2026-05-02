@@ -1,9 +1,21 @@
 "use client";
 
+import { useState } from "react";
+
 export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => void }) {
+  const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+
   async function run(taskId: string, action: "outline" | "rewrite" | "export") {
-    await fetch(`/api/tasks/${taskId}/${action}`, { method: "POST" });
-    onChanged();
+    setBusyTaskId(taskId);
+    setBusyAction(action);
+    try {
+      await fetch(`/api/tasks/${taskId}/${action}`, { method: "POST" });
+      await onChanged();
+    } finally {
+      setBusyTaskId(null);
+      setBusyAction(null);
+    }
   }
 
   return (
@@ -18,19 +30,56 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button className="rounded border px-3 py-2" onClick={() => run(task.id, "outline")}>
-                解析大纲
+              <button
+                className="rounded border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canParse(task.status) || busyTaskId === task.id}
+                onClick={() => run(task.id, "outline")}
+              >
+                {busyTaskId === task.id && busyAction === "outline" ? "解析中..." : "解析大纲"}
               </button>
-              <button className="rounded border px-3 py-2" onClick={() => run(task.id, "rewrite")}>
-                开始润色
+              <button
+                className="rounded border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canRewrite(task.status) || busyTaskId === task.id}
+                onClick={() => run(task.id, "rewrite")}
+              >
+                {busyTaskId === task.id && busyAction === "rewrite" ? "润色中..." : "开始润色"}
               </button>
-              <button className="rounded border px-3 py-2" onClick={() => run(task.id, "export")}>
-                生成导出
+              <button
+                className="rounded border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canExport(task.status) || busyTaskId === task.id}
+                onClick={() => run(task.id, "export")}
+              >
+                {busyTaskId === task.id && busyAction === "export" ? "导出中..." : "生成导出"}
               </button>
             </div>
           </div>
+          {task.status === "completed" ? (
+            <div className="mt-3 flex flex-wrap gap-2 border-t pt-3 text-sm">
+              <a className="rounded bg-slate-950 px-3 py-2 text-white" href={`/api/tasks/${task.id}/files/docx`}>
+                下载 DOCX
+              </a>
+              <a className="rounded border px-3 py-2" href={`/api/tasks/${task.id}/files/report`}>
+                下载报告
+              </a>
+              <a className="rounded border px-3 py-2" href={`/api/tasks/${task.id}/files/comparison`}>
+                下载对照表
+              </a>
+            </div>
+          ) : null}
         </article>
       ))}
     </div>
   );
+}
+
+function canParse(status: string) {
+  return ["uploaded", "failed"].includes(status);
+}
+
+function canRewrite(status: string) {
+  return ["awaiting_review", "awaiting_manual_decision"].includes(status);
+}
+
+function canExport(status: string) {
+  return ["exporting"].includes(status);
 }

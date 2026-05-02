@@ -5,3 +5,7 @@ node_modules/
 .env
 storage/
 prisma/dev.db*
+dev-server*.log
+dev-server.pid
+qa-sample.docx
+.gstack/
