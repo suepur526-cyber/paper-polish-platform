@@ -1,5 +1,6 @@
 const STRUCTURAL_PREFIX_PATTERNS = [
   /^\s*第[一二三四五六七八九十百千万\d]+[章节篇部分]\s*[^：:。；;，,\n]{1,32}[：:]/,
+  /^\s*第[一二三四五六七八九十百千万\d]+[章节篇部分](?=(?:主要|重点|详细|系统|介绍|阐述|梳理|归纳|总结|完成|对|从|围绕|结合))/,
   /^\s*\d+(?:\.\d+){0,5}\s+[^：:。；;，,\n]{1,32}[：:]/,
   /^\s*[一二三四五六七八九十]+[、.．]\s*[^：:。；;，,\n]{1,32}[：:]/,
   /^\s*[（(]\s*[一二三四五六七八九十\d]+\s*[）)]/,
@@ -7,7 +8,7 @@ const STRUCTURAL_PREFIX_PATTERNS = [
   /^\s*[①②③④⑤⑥⑦⑧⑨⑩]/
 ];
 
-const STRUCTURAL_LABEL_PREFIX_PATTERNS = STRUCTURAL_PREFIX_PATTERNS.slice(0, 3);
+const STRUCTURAL_LABEL_PREFIX_PATTERNS = STRUCTURAL_PREFIX_PATTERNS.slice(0, 4);
 
 export function extractProtectedTerms(text: string, modelTerms: string[] = []) {
   const structuralPrefixes = extractStructuralPrefixes(text);

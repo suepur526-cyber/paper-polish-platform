@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  extractVisibleProtectedPrefixes,
   extractProtectedTerms,
   protectedTermsRetained,
   protectedTermsStayInOrder
@@ -22,6 +23,19 @@ describe("protected rewrite elements", () => {
   it("extracts numeric and chinese outline prefixes", () => {
     expect(extractProtectedTerms("3.2.1 功能需求分析：本文说明系统功能。")).toContain("3.2.1 功能需求分析：");
     expect(extractProtectedTerms("第一节 研究背景：本文说明研究背景。")).toContain("第一节 研究背景：");
+  });
+
+  it("extracts compact chapter guide prefixes without colons", () => {
+    const examples = [
+      ["第一章主要对系统研究背景和价值进行整理。", "第一章"],
+      ["第二章梳理本系统研发涉及的关键技术与方法。", "第二章"],
+      ["第七章归纳全文研究成果，同时指出后续方向。", "第七章"]
+    ];
+
+    for (const [text, prefix] of examples) {
+      expect(extractProtectedTerms(text)).toContain(prefix);
+      expect(extractVisibleProtectedPrefixes(text)).toContain(prefix);
+    }
   });
 
   it("rejects rewritten text that removes protected structure", () => {
