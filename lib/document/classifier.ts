@@ -15,7 +15,7 @@ export type DocumentPhase =
   | "backMatter";
 
 export function detectNumberingPrefix(text: string) {
-  const match = text.match(/^(\s*(?:（\d+）|\(\d+\)|\d+[.)）]|[①②③④⑤⑥⑦⑧⑨⑩]))/);
+  const match = text.match(/^(\s*(?:（\d+）|\(\d+\)|\d+[)）]|[①②③④⑤⑥⑦⑧⑨⑩]|\d+\.(?!\d)))/);
   return match?.[1].trim() ?? null;
 }
 

@@ -30,6 +30,8 @@ describe("document classifier", () => {
 
   it("detects protected numbering prefix", () => {
     expect(detectNumberingPrefix("（1）研究对象具有代表性。")).toBe("（1）");
+    expect(detectNumberingPrefix("4.2 管理员功能模块实现")).toBeNull();
+    expect(detectNumberingPrefix("3.2.1 功能需求分析：本文说明系统功能。")).toBeNull();
   });
 
   it("skips references", () => {

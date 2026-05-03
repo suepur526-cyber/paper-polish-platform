@@ -47,8 +47,21 @@ const task = {
       numberingPrefix: "（1）"
     },
     {
+      id: "heading-2",
+      index: 4,
+      type: "heading",
+      outlinePath: "4.2 管理员功能模块实现",
+      originalText: "4.2 管理员功能模块实现",
+      selected: false,
+      status: "skipped",
+      skipReason: "标题默认跳过",
+      riskLevel: "medium",
+      citationCount: 0,
+      numberingPrefix: "4."
+    },
+    {
       id: "keywords-1",
-      index: 3,
+      index: 5,
       type: "keywords",
       outlinePath: "段落 3",
       originalText: "关键词：人工智能；教学",
@@ -68,10 +81,11 @@ describe("TaskReview", () => {
 
     expect(screen.getByText("大纲审阅")).toBeTruthy();
     expect(screen.getAllByText("第一章 绪论").length).toBeGreaterThan(0);
-    expect(screen.getByText((_, element) => element?.textContent === "已选 2 / 可选 2 · 跳过 2")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === "已选 2 / 可选 2 · 跳过 3")).toBeTruthy();
     expect(screen.getByText("跳过：标题默认跳过")).toBeTruthy();
     expect(screen.getByText("引用 1")).toBeTruthy();
     expect(screen.getByText("编号保护：（1）")).toBeTruthy();
+    expect(screen.queryByText("编号保护：4.")).toBeNull();
     expect(screen.getByText("保护前缀：第1章 绪论：")).toBeTruthy();
   });
 
@@ -82,7 +96,7 @@ describe("TaskReview", () => {
     fireEvent.click(bodyCheckbox);
 
     expect((bodyCheckbox as HTMLInputElement).checked).toBe(false);
-    expect(screen.getByText((_, element) => element?.textContent === "已选 1 / 可选 2 · 跳过 2")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === "已选 1 / 可选 2 · 跳过 3")).toBeTruthy();
     expect(screen.queryByRole("checkbox", { name: /关键词/ })).toBeNull();
   });
 
