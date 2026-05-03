@@ -106,6 +106,28 @@ export function buildOutlineTree(sections: readonly OutlineSection[]) {
   return roots;
 }
 
+export function collectAncestorSectionIds(
+  nodes: readonly OutlineTreeNode[],
+  sectionId: string | null
+) {
+  if (!sectionId) return [];
+
+  function visit(node: OutlineTreeNode, ancestors: string[]): string[] | null {
+    if (node.id === sectionId) return ancestors;
+    for (const child of node.children) {
+      const result = visit(child, [...ancestors, node.id]);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  for (const node of nodes) {
+    const result = visit(node, []);
+    if (result) return result;
+  }
+  return [];
+}
+
 function createSection(id: string, title: string): OutlineSection {
   return {
     id,

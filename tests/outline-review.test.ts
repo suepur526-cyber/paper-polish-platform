@@ -3,6 +3,7 @@ import {
   buildOutlineSections,
   buildOutlineTree,
   canSelectParagraph,
+  collectAncestorSectionIds,
   countReviewStats,
   getOutlineLevel,
   getParagraphsForSection
@@ -223,5 +224,17 @@ describe("outline review helpers", () => {
     expect(tree.map((node) => node.id)).toEqual(["intro", "one", "two"]);
     expect(tree[1].children.map((node) => node.id)).toEqual(["one-two"]);
     expect(tree[1].children[0].children.map((node) => node.id)).toEqual(["one-two-one"]);
+  });
+
+  it("collects ancestor section ids for active tree nodes", () => {
+    const tree = buildOutlineTree([
+      { id: "one", title: "1 引言", level: 1, paragraphIds: [], totalCount: 3, selectedCount: 1, skippedCount: 1 },
+      { id: "one-two", title: "1.2 国内外研究现状", level: 2, paragraphIds: [], totalCount: 1, selectedCount: 0, skippedCount: 1 },
+      { id: "one-two-one", title: "1.2.1 国内研究现状", level: 3, paragraphIds: [], totalCount: 3, selectedCount: 2, skippedCount: 1 }
+    ]);
+
+    expect(collectAncestorSectionIds(tree, "one-two-one")).toEqual(["one", "one-two"]);
+    expect(collectAncestorSectionIds(tree, "one")).toEqual([]);
+    expect(collectAncestorSectionIds(tree, "missing")).toEqual([]);
   });
 });
