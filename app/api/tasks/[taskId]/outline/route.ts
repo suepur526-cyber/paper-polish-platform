@@ -4,7 +4,7 @@ import { ensureDocxPath } from "@/lib/document/doc-converter";
 import { parseDocxParagraphs } from "@/lib/document/parser";
 import { reviewDocumentStructure } from "@/lib/document/structure-reviewer";
 import { getRewriteModelAdapter } from "@/lib/rewrite/model-adapter";
-import { expandProtectedTerms } from "@/lib/rewrite/protected-elements";
+import { detectProtectedTermsForParagraphs } from "@/lib/rewrite/protection-detection";
 
 export async function POST(_request: Request, context: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await context.params;
@@ -19,7 +19,10 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
 
     const docxPath = await ensureDocxPath(task.originalPath);
     const paragraphs = await reviewDocumentStructure(await parseDocxParagraphs(docxPath));
-    const modelProtectedTermsByIndex = await detectReviewModelProtectedTerms(paragraphs);
+    const modelProtectedTermsByIndex = await detectProtectedTermsForParagraphs(
+      paragraphs,
+      getRewriteModelAdapter()
+    );
 
     await prisma.paragraphRecord.deleteMany({ where: { taskId } });
     await prisma.paragraphRecord.createMany({
@@ -61,35 +64,5 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
       { error: error instanceof Error ? error.message : "解析失败" },
       { status: 400 }
     );
-  }
-}
-
-async function detectReviewModelProtectedTerms(paragraphs: Awaited<ReturnType<typeof reviewDocumentStructure>>) {
-  const adapter = getRewriteModelAdapter();
-  const byIndex = new Map<number, string[]>();
-  if (!adapter?.detectProtectedTerms) return byIndex;
-
-  for (const paragraph of paragraphs) {
-    if (!paragraph.selected) continue;
-
-    const terms = expandProtectedTerms(
-      paragraph.text,
-      await safeDetectProtectedTerms(adapter, paragraph.text)
-    );
-    if (terms.length > 0) byIndex.set(paragraph.index, terms);
-  }
-
-  return byIndex;
-}
-
-async function safeDetectProtectedTerms(
-  adapter: NonNullable<ReturnType<typeof getRewriteModelAdapter>>,
-  text: string
-) {
-  if (!adapter.detectProtectedTerms) return [];
-  try {
-    return await adapter.detectProtectedTerms(text);
-  } catch {
-    return [];
   }
 }

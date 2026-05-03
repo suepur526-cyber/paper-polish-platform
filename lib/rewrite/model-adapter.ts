@@ -8,6 +8,7 @@ export type RewriteCandidateRequest = {
 
 export interface RewriteModelAdapter {
   detectProtectedTerms?(text: string): Promise<string[]>;
+  detectProtectedTermsBatch?(texts: string[]): Promise<string[][]>;
   createCandidates(request: RewriteCandidateRequest): Promise<string[]>;
   chooseBestCandidate(original: string, candidates: string[]): Promise<string>;
 }
@@ -70,6 +71,62 @@ class OpenAIRewriteModelAdapter implements RewriteModelAdapter {
     return Array.isArray(parsed?.terms)
       ? parsed.terms.filter((term): term is string => typeof term === "string" && text.includes(term))
       : [];
+  }
+
+  async detectProtectedTermsBatch(texts: string[]) {
+    if (texts.length === 0) return [];
+
+    const completion = await this.client.chat.completions.create({
+      model: this.model,
+      store: false,
+      messages: [
+        {
+          role: "system",
+          content:
+            "你是论文润色前的保护片段识别助手。只识别不能被改写、删除或换序的原文连续片段。返回严格 JSON，不要解释。"
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "批量识别这些论文段落中的保护片段",
+            rules: [
+              "章节导语前缀、编号、小标题、图表编号、引用标记、专有名词、英文技术名词必须保护",
+              "编号后紧跟小标题时要整体保护，例如（1）性能需求：、（2）客户端、3. 数据库设计",
+              "疑似漏写冒号的小标题也要保护编号加小标题，不要只返回编号",
+              "只返回原文中连续出现的片段，不要改写，不要补造"
+            ],
+            outputSchema: {
+              results: [
+                {
+                  index: 0,
+                  terms: ["原文连续出现的保护片段"]
+                }
+              ]
+            },
+            paragraphs: texts.map((text, index) => ({ index, text }))
+          })
+        }
+      ]
+    });
+
+    const parsed = parseJsonObject(completion.choices[0]?.message.content ?? "");
+    if (!Array.isArray(parsed?.results)) return texts.map(() => []);
+
+    const byIndex = new Map<number, string[]>();
+    for (const result of parsed.results) {
+      if (!result || typeof result !== "object") continue;
+      const index = (result as { index?: unknown }).index;
+      const terms = (result as { terms?: unknown }).terms;
+      if (!Number.isInteger(index) || !Array.isArray(terms)) continue;
+      const text = texts[index as number];
+      if (typeof text !== "string") continue;
+      byIndex.set(
+        index as number,
+        terms.filter((term): term is string => typeof term === "string" && text.includes(term))
+      );
+    }
+
+    return texts.map((_, index) => byIndex.get(index) ?? []);
   }
 
   async createCandidates(request: RewriteCandidateRequest) {
