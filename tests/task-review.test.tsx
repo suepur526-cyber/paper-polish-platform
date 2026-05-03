@@ -73,8 +73,21 @@ const task = {
       numberingPrefix: "（1）"
     },
     {
-      id: "heading-2",
+      id: "missing-colon-title-1",
       index: 5,
+      type: "body",
+      outlinePath: "硬件与环境需求",
+      originalText: "（2）客户端使用Windows系统，分辨率达到或超过1366×768。",
+      selected: true,
+      status: "selected",
+      skipReason: null,
+      riskLevel: "low",
+      citationCount: 0,
+      numberingPrefix: "（2）"
+    },
+    {
+      id: "heading-2",
+      index: 6,
       type: "heading",
       outlinePath: "4.2 管理员功能模块实现",
       originalText: "4.2 管理员功能模块实现",
@@ -87,7 +100,7 @@ const task = {
     },
     {
       id: "keywords-1",
-      index: 6,
+      index: 7,
       type: "keywords",
       outlinePath: "段落 3",
       originalText: "关键词：人工智能；教学",
@@ -107,7 +120,7 @@ describe("TaskReview", () => {
 
     expect(screen.getByText("大纲审阅")).toBeTruthy();
     expect(screen.getAllByText("第一章 绪论").length).toBeGreaterThan(0);
-    expect(screen.getByText((_, element) => element?.textContent === "已选 4 / 可选 4 · 跳过 3")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === "已选 5 / 可选 5 · 跳过 3")).toBeTruthy();
     expect(screen.getByText("跳过：标题默认跳过")).toBeTruthy();
     expect(screen.getByText("引用 1")).toBeTruthy();
     expect(screen.getAllByText("编号保护：（1）").length).toBe(2);
@@ -115,6 +128,7 @@ describe("TaskReview", () => {
     expect(screen.getByText("保护前缀：第1章 绪论：")).toBeTruthy();
     expect(screen.getByText("保护前缀：第一章")).toBeTruthy();
     expect(screen.getByText("保护前缀：（1）性能需求：")).toBeTruthy();
+    expect(screen.getByText("疑似漏冒号，保护：（2）客户端：")).toBeTruthy();
   });
 
   it("lets users toggle selectable paragraphs only", () => {
@@ -124,7 +138,7 @@ describe("TaskReview", () => {
     fireEvent.click(bodyCheckbox);
 
     expect((bodyCheckbox as HTMLInputElement).checked).toBe(false);
-    expect(screen.getByText((_, element) => element?.textContent === "已选 3 / 可选 4 · 跳过 3")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === "已选 4 / 可选 5 · 跳过 3")).toBeTruthy();
     expect(screen.queryByRole("checkbox", { name: /关键词/ })).toBeNull();
   });
 

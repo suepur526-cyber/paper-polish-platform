@@ -2,7 +2,10 @@
 
 import React from "react";
 import { canSelectParagraph, type ReviewParagraph } from "@/lib/review/outline";
-import { extractVisibleProtectedPrefixes } from "@/lib/rewrite/protected-elements";
+import {
+  extractVisibleProtectedSegments,
+  type VisibleProtectedSegment
+} from "@/lib/rewrite/protected-elements";
 
 const typeLabels: Record<string, string> = {
   heading: "标题",
@@ -35,7 +38,8 @@ export function ParagraphReviewList({
       {paragraphs.map((paragraph) => {
         const selectable = canSelectParagraph(paragraph);
         const checked = Boolean(selectedMap[paragraph.id]);
-        const protectedPrefixes = extractVisibleProtectedPrefixes(paragraph.originalText);
+        const protectedSegments = extractVisibleProtectedSegments(paragraph.originalText);
+        const protectedPrefixes = protectedSegments.map((segment) => segment.text);
         return (
           <article key={paragraph.id} className="min-w-0 rounded-md border bg-white px-3 py-2">
             <div className="flex min-w-0 items-start gap-2.5">
@@ -59,16 +63,10 @@ export function ParagraphReviewList({
                   <span>引用 {paragraph.citationCount}</span>
                   {paragraph.numberingPrefix ? <span>编号保护：{paragraph.numberingPrefix}</span> : null}
                 </div>
-                {protectedPrefixes.length > 0 ? (
+                {protectedSegments.length > 0 ? (
                   <div className="mt-1 flex flex-wrap gap-1.5 text-xs">
-                    {protectedPrefixes.map((prefix) => (
-                      <span
-                        className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700"
-                        key={prefix}
-                        title="润色时会保留这个前缀，且必须仍在段落开头"
-                      >
-                        保护前缀：{prefix}
-                      </span>
+                    {protectedSegments.map((segment) => (
+                      <ProtectedSegmentBadge key={`${segment.kind}:${segment.text}`} segment={segment} />
                     ))}
                   </div>
                 ) : null}
@@ -84,6 +82,28 @@ export function ParagraphReviewList({
         );
       })}
     </div>
+  );
+}
+
+function ProtectedSegmentBadge({ segment }: { segment: VisibleProtectedSegment }) {
+  if (segment.kind === "suspectedMissingColon") {
+    return (
+      <span
+        className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 font-medium text-amber-800"
+        title="疑似用户漏写冒号；润色时会保留原文片段，不会自动改正文格式"
+      >
+        疑似漏冒号，保护：{segment.text}：
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700"
+      title="润色时会保留这个前缀，且必须仍在段落开头"
+    >
+      保护前缀：{segment.text}
+    </span>
   );
 }
 

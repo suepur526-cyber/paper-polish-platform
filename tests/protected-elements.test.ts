@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  extractVisibleProtectedSegments,
   extractVisibleProtectedPrefixes,
   extractProtectedTerms,
   protectedTermsRetained,
@@ -49,6 +50,22 @@ describe("protected rewrite elements", () => {
     for (const [text, prefix] of examples) {
       expect(extractProtectedTerms(text)).toContain(prefix);
       expect(extractVisibleProtectedPrefixes(text)).toContain(prefix);
+    }
+  });
+
+  it("extracts likely missing-colon numbered item titles", () => {
+    const examples = [
+      ["（2）客户端使用Windows系统，分辨率达到或超过1366×768。", "（2）客户端"],
+      ["（5）数据库采用MySQL 8.0以上版本。", "（5）数据库"]
+    ];
+
+    for (const [text, prefix] of examples) {
+      expect(extractProtectedTerms(text)).toContain(prefix);
+      expect(extractVisibleProtectedPrefixes(text)).toContain(prefix);
+      expect(extractVisibleProtectedSegments(text)).toContainEqual({
+        text: prefix,
+        kind: "suspectedMissingColon"
+      });
     }
   });
 
