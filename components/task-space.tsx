@@ -19,6 +19,16 @@ export function TaskSpace({ code, onExit }: { code: string; onExit: () => void }
     refresh();
   }, [code]);
 
+  useEffect(() => {
+    if (!tasks.some((task) => isActiveTaskStatus(task.status))) return;
+
+    const interval = window.setInterval(() => {
+      void refresh();
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [code, tasks]);
+
   function exitCode() {
     localStorage.removeItem("activePickupCode");
     onExit();
@@ -39,4 +49,15 @@ export function TaskSpace({ code, onExit }: { code: string; onExit: () => void }
       <TaskList tasks={tasks} onChanged={refresh} />
     </section>
   );
+}
+
+function isActiveTaskStatus(status: string) {
+  return [
+    "queued_parse",
+    "parsing",
+    "queued_rewrite",
+    "rewriting",
+    "queued_export",
+    "exporting"
+  ].includes(status);
 }

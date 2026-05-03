@@ -27,9 +27,7 @@ export async function rewriteParagraphWithQualityPipeline(input: QualityPipeline
       numberingPrefix: input.numberingPrefix,
       adapter
     });
-    const bestCandidate = adapter
-      ? await adapter.chooseBestCandidate(input.text, candidates)
-      : candidates[0];
+    const bestCandidate = await chooseBestCandidateSafely(input.text, candidates, adapter);
     const orderedCandidates = [
       bestCandidate,
       ...candidates.filter((candidate) => candidate !== bestCandidate)
@@ -87,6 +85,19 @@ export async function rewriteParagraphWithQualityPipeline(input: QualityPipeline
       protectedTermsOk: protectedTermsValid(protectedTerms, lastCandidate)
     }
   };
+}
+
+export async function chooseBestCandidateSafely(
+  original: string,
+  candidates: string[],
+  adapter: ReturnType<typeof getRewriteModelAdapter>
+) {
+  if (!adapter || candidates.length <= 1) return candidates[0] ?? original;
+  try {
+    return await adapter.chooseBestCandidate(original, candidates);
+  } catch {
+    return candidates[0] ?? original;
+  }
 }
 
 async function detectModelProtectedTerms(adapter: ReturnType<typeof getRewriteModelAdapter>, text: string) {

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { rewriteParagraphWithQualityPipeline } from "@/lib/rewrite/quality-pipeline";
+import {
+  chooseBestCandidateSafely,
+  rewriteParagraphWithQualityPipeline
+} from "@/lib/rewrite/quality-pipeline";
 
 describe("quality pipeline", () => {
   it("keeps numbering prefix", async () => {
@@ -44,5 +47,22 @@ describe("quality pipeline", () => {
     });
 
     expect(["validated", "needs_manual_decision"]).toContain(result.status);
+  });
+
+  it("falls back to the first candidate when model candidate selection fails", async () => {
+    const result = await chooseBestCandidateSafely(
+      "original",
+      ["candidate one", "candidate two"],
+      {
+        async createCandidates() {
+          return [];
+        },
+        async chooseBestCandidate() {
+          throw new Error("model response was malformed");
+        }
+      }
+    );
+
+    expect(result).toBe("candidate one");
   });
 });

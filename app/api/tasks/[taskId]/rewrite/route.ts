@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { rewriteParagraphWithQualityPipeline } from "@/lib/rewrite/quality-pipeline";
+import { runRewriteTask } from "@/lib/jobs/task-actions";
+import { enqueueTaskJob } from "@/lib/jobs/task-runner";
 
 export async function POST(_request: Request, context: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await context.params;
@@ -10,48 +11,14 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
   });
   if (!task) return NextResponse.json({ error: "任务不存在" }, { status: 404 });
 
-  await prisma.paperTask.update({
-    where: { id: taskId },
-    data: { status: "rewriting", progress: 55 }
-  });
-
-  const selected = task.paragraphs.filter((paragraph) => paragraph.selected);
-  for (const paragraph of selected) {
-    const result = await rewriteParagraphWithQualityPipeline({
-      text: paragraph.originalText,
-      numberingPrefix: paragraph.numberingPrefix,
-      citationCount: paragraph.citationCount,
-      modelProtectedTerms: readModelProtectedTerms(paragraph.validationJson)
-    });
-
-    await prisma.paragraphRecord.update({
-      where: { id: paragraph.id },
-      data: {
-        rewrittenText: result.rewrittenText,
-        status: result.status,
-        retryCount: result.retryCount,
-        validationJson: JSON.stringify(result.validation)
-      }
-    });
-  }
-
+  const queued = enqueueTaskJob(taskId, "rewrite", runRewriteTask);
   const updated = await prisma.paperTask.update({
     where: { id: taskId },
-    data: { status: "exporting", progress: 80 },
+    data: queued.alreadyQueued
+      ? {}
+      : { status: "queued_rewrite", progress: Math.max(task.progress, 45), errorMessage: null },
     include: { paragraphs: { orderBy: { index: "asc" } } }
   });
 
-  return NextResponse.json(updated);
-}
-
-function readModelProtectedTerms(validationJson: string | null) {
-  if (!validationJson) return [];
-  try {
-    const parsed = JSON.parse(validationJson) as { protectedTerms?: unknown };
-    return Array.isArray(parsed.protectedTerms)
-      ? parsed.protectedTerms.filter((term): term is string => typeof term === "string")
-      : [];
-  } catch {
-    return [];
-  }
+  return NextResponse.json({ ...updated, jobQueued: !queued.alreadyQueued });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { exportTaskFiles } from "@/lib/document/exporter";
+import { runExportTask } from "@/lib/jobs/task-actions";
+import { enqueueTaskJob } from "@/lib/jobs/task-runner";
 
 export async function POST(_request: Request, context: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await context.params;
@@ -10,16 +11,14 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
   });
   if (!task) return NextResponse.json({ error: "任务不存在" }, { status: 404 });
 
-  const paths = await exportTaskFiles(task);
+  const queued = enqueueTaskJob(taskId, "export", runExportTask);
   const updated = await prisma.paperTask.update({
     where: { id: taskId },
-    data: {
-      ...paths,
-      status: "completed",
-      progress: 100
-    },
+    data: queued.alreadyQueued
+      ? {}
+      : { status: "queued_export", progress: Math.max(task.progress, 82), errorMessage: null },
     include: { paragraphs: { orderBy: { index: "asc" } } }
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json({ ...updated, jobQueued: !queued.alreadyQueued });
 }

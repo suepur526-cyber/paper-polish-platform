@@ -12,7 +12,8 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
     setBusyTaskId(taskId);
     setBusyAction(action);
     try {
-      await fetch(`/api/tasks/${taskId}/${action}`, { method: "POST" });
+      const response = await fetch(`/api/tasks/${taskId}/${action}`, { method: "POST" });
+      if (!response.ok) throw new Error("启动任务失败");
       await onChanged();
     } finally {
       setBusyTaskId(null);
@@ -28,8 +29,9 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
             <div className="min-w-0">
               <h3 className="break-words font-medium">{task.originalName}</h3>
               <p className="text-sm text-slate-500">
-                状态：{task.status} · 进度：{task.progress}%
+                状态：{statusLabel(task.status)} · 进度：{task.progress}%
               </p>
+              {task.errorMessage ? <p className="mt-1 text-sm text-red-600">{task.errorMessage}</p> : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <button
@@ -37,14 +39,14 @@ export function TaskList({ tasks, onChanged }: { tasks: any[]; onChanged: () => 
                 disabled={!canParse(task.status) || busyTaskId === task.id}
                 onClick={() => run(task.id, "outline")}
               >
-                {busyTaskId === task.id && busyAction === "outline" ? "解析中..." : "解析大纲"}
+                {busyTaskId === task.id && busyAction === "outline" ? "启动中..." : "解析大纲"}
               </button>
               <button
                 className="rounded border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!canExport(task.status) || busyTaskId === task.id}
                 onClick={() => run(task.id, "export")}
               >
-                {busyTaskId === task.id && busyAction === "export" ? "导出中..." : "生成导出"}
+                {busyTaskId === task.id && busyAction === "export" ? "启动中..." : "重新生成导出"}
               </button>
             </div>
           </div>
@@ -77,5 +79,21 @@ function canParse(status: string) {
 }
 
 function canExport(status: string) {
-  return ["exporting"].includes(status);
+  return ["completed"].includes(status);
+}
+
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    uploaded: "已上传",
+    queued_parse: "等待解析",
+    parsing: "正在解析结构",
+    awaiting_review: "等待审阅",
+    queued_rewrite: "等待润色",
+    rewriting: "正在润色",
+    queued_export: "等待导出",
+    exporting: "正在生成导出",
+    completed: "已完成",
+    failed: "失败"
+  };
+  return labels[status] ?? status;
 }
