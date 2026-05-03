@@ -93,4 +93,28 @@ describe("document structure reviewer", () => {
     expect(guarded[1]).toMatchObject({ type: "skipped", selected: false, outlinePath: "目 录" });
     expect(guarded[2]).toMatchObject({ type: "skipped", selected: false, outlinePath: "致 谢" });
   });
+
+  it("locks code-like paragraphs even if model marks them as body", async () => {
+    const reviewer: DocumentStructureReviewer = {
+      async reviewParagraphs() {
+        return [{ index: 8, type: "body", selected: true, skipReason: null }];
+      }
+    };
+
+    const reviewed = await reviewDocumentStructure(
+      [
+        paragraph({
+          index: 8,
+          text: '@RequestMapping(value = "/login") public R login(String username, String password) { return R.ok().put("token", token); }'
+        })
+      ],
+      reviewer
+    );
+
+    expect(reviewed[0]).toMatchObject({
+      type: "skipped",
+      selected: false,
+      skipReason: "代码片段默认跳过"
+    });
+  });
 });

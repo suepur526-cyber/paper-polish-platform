@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import {
   isBackMatterHeading,
   isCaptionLine,
+  isCodeLikeParagraph,
   isReferenceEntry,
   isReferenceHeading,
   isTocEntry,
@@ -129,6 +130,13 @@ export function enforceStructureGuardrails(paragraphs: readonly ParsedParagraph[
         riskLevel: "medium"
       });
     }
+    if (isCodeLikeParagraph(text)) {
+      return lockParagraph(paragraph, {
+        type: "skipped",
+        skipReason: "代码片段默认跳过",
+        riskLevel: "medium"
+      });
+    }
     return { ...paragraph };
   });
 }
@@ -155,9 +163,10 @@ class OpenAIDocumentStructureReviewer implements DocumentStructureReviewer {
             task: "复检论文解析结果，修正被误判的目录、题注、标题、正文、参考文献、致谢和附录",
             rules: [
               "图/表题注、目录项、参考文献、致谢、附录必须 selected=false",
+              "代码片段、接口代码、SQL、配置片段、变量/方法密集的程序文本必须 selected=false",
               "参考文献和致谢必须成为独立大纲区域，不要挂到最后一个正文小节下面",
               "只有正文和摘要正文可以 selected=true",
-              "标题、目录标题、关键词行、参考文献标题、致谢标题都不能润色",
+              "标题、目录标题、关键词行、参考文献标题、致谢标题、代码片段都不能润色",
               "仅返回确实需要修正的段落"
             ],
             outputSchema: {

@@ -69,6 +69,30 @@ export function isCaptionLine(text: string) {
   return /^(图|表)\s*\d+(?:[.\-－—]\d+)*\s*[\s　]+\S.{0,60}$/.test(normalized);
 }
 
+export function isCodeLikeParagraph(text: string) {
+  const normalized = normalizeParagraphText(text);
+  if (normalized.length < 20) return false;
+
+  const codeSignals = [
+    /@\w+(?:\([^)]*\))?/,
+    /\b(public|private|protected|static|final|class|interface|return|if|else|new|try|catch|throw|throws)\b/,
+    /\b(String|Integer|Long|Boolean|Double|Float|List|Map|Set|HttpServletRequest|EntityWrapper)\b/,
+    /\w+\s*\([^)]*\)\s*\{/,
+    /\.\w+\s*\(/,
+    /[{};]/,
+    /==|!=|<=|>=|&&|\|\||=>|->/,
+    /<\s*[A-Z][A-Za-z0-9_]*\s*>/,
+    /\b(const|let|var|function|async|await|import|export)\b/,
+    /\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN)\b/i
+  ];
+  const signalCount = codeSignals.reduce((count, pattern) => count + (pattern.test(normalized) ? 1 : 0), 0);
+  const symbolCount = (normalized.match(/[{}();=<>.[\]"'`]/g) ?? []).length;
+  const symbolDensity = symbolCount / normalized.length;
+  const hasLongChineseSentence = /[。！？]/.test(normalized);
+
+  return signalCount >= 3 || (signalCount >= 2 && symbolDensity > 0.08 && !hasLongChineseSentence);
+}
+
 export function isTocEntry(text: string) {
   const normalized = normalizeParagraphText(text);
   return (
@@ -130,6 +154,7 @@ export function shouldSkipParagraph(text: string, phase: DocumentPhase = "body")
   if (phase === "backMatter" || isBackMatterHeading(normalized)) return "致谢、附录等后置内容默认跳过";
   if (isReferenceEntry(normalized)) return "疑似参考文献条目默认跳过";
   if (isCaptionLine(normalized)) return "图表题注默认跳过";
+  if (isCodeLikeParagraph(normalized)) return "代码片段默认跳过";
   if (phase === "frontMatter" || isFrontMatterLine(normalized)) return "封面、声明或论文元数据默认跳过";
   if (isKeywordsLine(normalized)) return "关键词行需在摘要润色后确认更新";
   if (normalized.length < 12) return "疑似标题或短标签，默认跳过";

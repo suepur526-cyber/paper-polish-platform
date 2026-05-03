@@ -3,6 +3,7 @@ import {
   classifyParagraph,
   detectNumberingPrefix,
   isCaptionLine,
+  isCodeLikeParagraph,
   isReferenceEntry,
   isLikelyHeading,
   isTocEntry,
@@ -140,6 +141,18 @@ describe("document classifier", () => {
       type: "skipped",
       selected: false,
       skipReason: "图表题注默认跳过"
+    });
+  });
+
+  it("skips code-like paragraphs from implementation chapters", () => {
+    const code =
+      '@RequestMapping(value = "/login")public R login(String username, String password, String captcha, HttpServletRequest request) { YonghuEntity user = yonghuService.selectOne(new EntityWrapper<YonghuEntity>().eq("yonghuzhanghao", username)); if(user == null || !user.getMima().equals(password)) { return R.error("账号或密码不正确"); } String token = tokenService.generateToken(user.getId(), username, "yonghu", "用户"); return R.ok().put("token", token).put("user", user);}';
+
+    expect(isCodeLikeParagraph(code)).toBe(true);
+    expect(classifyParagraph({ text: code, index: 420, phase: "body" })).toMatchObject({
+      type: "skipped",
+      selected: false,
+      skipReason: "代码片段默认跳过"
     });
   });
 
