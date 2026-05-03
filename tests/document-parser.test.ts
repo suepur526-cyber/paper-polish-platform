@@ -136,6 +136,7 @@ describe("document classifier", () => {
 
   it("skips hyphenated figure captions from real papers", () => {
     expect(isCaptionLine("图3-1 系统整体用例图")).toBe(true);
+    expect(isCaptionLine("图3-10预约课程（yuyuekecheng）实体属性图")).toBe(true);
     expect(isCaptionLine("表4-2 用户信息表")).toBe(true);
     expect(classifyParagraph({ text: "图3-1 系统整体用例图", index: 300, phase: "body" })).toMatchObject({
       type: "skipped",

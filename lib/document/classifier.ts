@@ -66,7 +66,7 @@ export function isReferenceEntry(text: string) {
 
 export function isCaptionLine(text: string) {
   const normalized = normalizeParagraphText(text);
-  return /^(图|表)\s*\d+(?:[.\-－—]\d+)*\s*[\s　]+\S.{0,60}$/.test(normalized);
+  return /^(图|表)\s*\d+(?:[.\-－—]\d+)+[\s　]*\S.{0,60}$/.test(normalized);
 }
 
 export function isCodeLikeParagraph(text: string) {
