@@ -21,8 +21,21 @@ const task = {
       numberingPrefix: null
     },
     {
-      id: "body-1",
+      id: "chapter-summary-1",
       index: 1,
+      type: "body",
+      outlinePath: "论文组织结构",
+      originalText: "第1章 绪论：主要介绍了本课题的研究背景与意义，分析了国内外研究现状。",
+      selected: true,
+      status: "selected",
+      skipReason: null,
+      riskLevel: "low",
+      citationCount: 0,
+      numberingPrefix: null
+    },
+    {
+      id: "body-1",
+      index: 2,
       type: "body",
       outlinePath: "段落 2",
       originalText: "（1）研究背景。人工智能工具被广泛用于课堂管理[1]。",
@@ -35,7 +48,7 @@ const task = {
     },
     {
       id: "keywords-1",
-      index: 2,
+      index: 3,
       type: "keywords",
       outlinePath: "段落 3",
       originalText: "关键词：人工智能；教学",
@@ -55,20 +68,21 @@ describe("TaskReview", () => {
 
     expect(screen.getByText("大纲审阅")).toBeTruthy();
     expect(screen.getAllByText("第一章 绪论").length).toBeGreaterThan(0);
-    expect(screen.getByText((_, element) => element?.textContent === "已选 1 / 可选 1 · 跳过 2")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === "已选 2 / 可选 2 · 跳过 2")).toBeTruthy();
     expect(screen.getByText("跳过：标题默认跳过")).toBeTruthy();
     expect(screen.getByText("引用 1")).toBeTruthy();
     expect(screen.getByText("编号保护：（1）")).toBeTruthy();
+    expect(screen.getByText("保护前缀：第1章 绪论：")).toBeTruthy();
   });
 
   it("lets users toggle selectable paragraphs only", () => {
     render(<TaskReview task={task} onChanged={vi.fn()} />);
 
-    const bodyCheckbox = screen.getByRole("checkbox", { name: /研究背景/ });
+    const bodyCheckbox = screen.getByRole("checkbox", { name: /人工智能工具/ });
     fireEvent.click(bodyCheckbox);
 
     expect((bodyCheckbox as HTMLInputElement).checked).toBe(false);
-    expect(screen.getByText((_, element) => element?.textContent === "已选 0 / 可选 1 · 跳过 2")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === "已选 1 / 可选 2 · 跳过 2")).toBeTruthy();
     expect(screen.queryByRole("checkbox", { name: /关键词/ })).toBeNull();
   });
 

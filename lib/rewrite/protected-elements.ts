@@ -7,11 +7,17 @@ const STRUCTURAL_PREFIX_PATTERNS = [
   /^\s*[①②③④⑤⑥⑦⑧⑨⑩]/
 ];
 
+const STRUCTURAL_LABEL_PREFIX_PATTERNS = STRUCTURAL_PREFIX_PATTERNS.slice(0, 3);
+
 export function extractProtectedTerms(text: string, modelTerms: string[] = []) {
   const structuralPrefixes = extractStructuralPrefixes(text);
   const english = text.match(/[A-Z][A-Za-z0-9-]{1,}/g) ?? [];
   const citations = text.match(/\[[0-9,\-\s]+\]|〔[0-9,\-\s]+〕/g) ?? [];
   return uniqueTerms([...structuralPrefixes, ...modelTerms, ...english, ...citations], text);
+}
+
+export function extractVisibleProtectedPrefixes(text: string) {
+  return extractStructuralPrefixes(text, STRUCTURAL_LABEL_PREFIX_PATTERNS);
 }
 
 export function protectedTermsRetained(terms: string[], rewritten: string) {
@@ -41,9 +47,9 @@ export function protectedTermsValid(terms: string[], rewritten: string) {
   );
 }
 
-function extractStructuralPrefixes(text: string) {
+function extractStructuralPrefixes(text: string, patterns = STRUCTURAL_PREFIX_PATTERNS) {
   const terms: string[] = [];
-  for (const pattern of STRUCTURAL_PREFIX_PATTERNS) {
+  for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match?.[0]) terms.push(match[0].trimStart());
   }
