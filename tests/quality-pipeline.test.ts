@@ -13,6 +13,18 @@ describe("quality pipeline", () => {
     expect(result.status).toBe("validated");
   });
 
+  it("keeps chapter guide prefixes during rewriting", async () => {
+    const result = await rewriteParagraphWithQualityPipeline({
+      text: "第1章 绪论：主要介绍了本课题的研究背景与意义，分析了国内外研究现状。",
+      numberingPrefix: null,
+      citationCount: 0
+    });
+
+    expect(result.rewrittenText.startsWith("第1章 绪论：")).toBe(true);
+    expect(result.validation.protectedTermsOk).toBe(true);
+    expect(result.status).toBe("validated");
+  });
+
   it("returns a valid terminal paragraph state", async () => {
     const result = await rewriteParagraphWithQualityPipeline({
       text: "短句。",

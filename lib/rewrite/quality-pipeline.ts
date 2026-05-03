@@ -1,7 +1,7 @@
 import { validateNumberingPrefix, validateRewriteLength } from "@/lib/document/validators";
 import { createMockRewriteCandidates } from "@/lib/rewrite/mock-rewriter";
 import { getRewriteModelAdapter } from "@/lib/rewrite/model-adapter";
-import { extractProtectedTerms, protectedTermsRetained } from "@/lib/rewrite/protected-elements";
+import { extractProtectedTerms, protectedTermsValid } from "@/lib/rewrite/protected-elements";
 
 export type QualityPipelineInput = {
   text: string;
@@ -10,8 +10,9 @@ export type QualityPipelineInput = {
 };
 
 export async function rewriteParagraphWithQualityPipeline(input: QualityPipelineInput) {
-  const protectedTerms = extractProtectedTerms(input.text);
   const adapter = getRewriteModelAdapter();
+  const modelProtectedTerms = adapter ? await detectModelProtectedTerms(adapter, input.text) : [];
+  const protectedTerms = extractProtectedTerms(input.text, modelProtectedTerms);
   let retryCount = 0;
   let lastCandidate = input.text;
 
@@ -35,7 +36,7 @@ export async function rewriteParagraphWithQualityPipeline(input: QualityPipeline
       return (
         validateNumberingPrefix(input.numberingPrefix, candidate) &&
         validateRewriteLength(input.text, candidate) &&
-        protectedTermsRetained(protectedTerms, candidate)
+        protectedTermsValid(protectedTerms, candidate)
       );
     });
 
@@ -47,7 +48,7 @@ export async function rewriteParagraphWithQualityPipeline(input: QualityPipeline
         validation: {
           lengthOk: validateRewriteLength(input.text, valid),
           numberingOk: validateNumberingPrefix(input.numberingPrefix, valid),
-          protectedTermsOk: protectedTermsRetained(protectedTerms, valid)
+          protectedTermsOk: protectedTermsValid(protectedTerms, valid)
         }
       };
     }
@@ -62,9 +63,18 @@ export async function rewriteParagraphWithQualityPipeline(input: QualityPipeline
     validation: {
       lengthOk: validateRewriteLength(input.text, lastCandidate),
       numberingOk: validateNumberingPrefix(input.numberingPrefix, lastCandidate),
-      protectedTermsOk: protectedTermsRetained(protectedTerms, lastCandidate)
+      protectedTermsOk: protectedTermsValid(protectedTerms, lastCandidate)
     }
   };
+}
+
+async function detectModelProtectedTerms(adapter: ReturnType<typeof getRewriteModelAdapter>, text: string) {
+  if (!adapter?.detectProtectedTerms) return [];
+  try {
+    return await adapter.detectProtectedTerms(text);
+  } catch {
+    return [];
+  }
 }
 
 async function createCandidates(params: {

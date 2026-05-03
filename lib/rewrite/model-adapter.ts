@@ -7,6 +7,7 @@ export type RewriteCandidateRequest = {
 };
 
 export interface RewriteModelAdapter {
+  detectProtectedTerms?(text: string): Promise<string[]>;
   createCandidates(request: RewriteCandidateRequest): Promise<string[]>;
   chooseBestCandidate(original: string, candidates: string[]): Promise<string>;
 }
@@ -35,6 +36,39 @@ class OpenAIRewriteModelAdapter implements RewriteModelAdapter {
     private readonly model: string
   ) {}
 
+  async detectProtectedTerms(text: string) {
+    const completion = await this.client.chat.completions.create({
+      model: this.model,
+      store: false,
+      messages: [
+        {
+          role: "system",
+          content:
+            "你是论文润色前的保护片段识别助手。只识别不能被改写、删除、换序的原文片段，返回严格 JSON。"
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "识别这段文字中的保护片段",
+            rules: [
+              "章节导语前缀必须保护，例如“第1章 绪论：”“3.2.1 功能需求分析：”",
+              "有序编号、项目编号、图表编号、引用标记、专有名词、英文技术名词必须保护",
+              "只返回原文中连续出现的片段，不要改写，不要补造",
+              "如果保护片段在句首承担结构定位作用，必须完整包含冒号或右括号"
+            ],
+            outputSchema: { terms: ["原文保护片段"] },
+            text
+          })
+        }
+      ]
+    });
+
+    const parsed = parseJsonObject(completion.choices[0]?.message.content ?? "");
+    return Array.isArray(parsed?.terms)
+      ? parsed.terms.filter((term): term is string => typeof term === "string" && text.includes(term))
+      : [];
+  }
+
   async createCandidates(request: RewriteCandidateRequest) {
     const completion = await this.client.chat.completions.create({
       model: this.model,
@@ -54,7 +88,8 @@ class OpenAIRewriteModelAdapter implements RewriteModelAdapter {
               "保持学术语体",
               "减少模板化表达",
               "长度控制在原文正负 5% 以内",
-              "不得删除、增加或改写 protectedTerms 中的内容",
+              "不得删除、增加、改写或换序 protectedTerms 中的内容",
+              "如果 protectedTerms 中有章节导语前缀，例如“第1章 绪论：”，候选文本必须仍以该前缀开头",
               "如果 numberingPrefix 存在，候选文本必须以它开头"
             ],
             outputSchema: { candidates: ["候选一", "候选二", "候选三"] },
