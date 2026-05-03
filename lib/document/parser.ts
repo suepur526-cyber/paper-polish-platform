@@ -7,6 +7,7 @@ import {
   isLikelyHeading,
   isReferenceEntry,
   isReferenceHeading,
+  isStructuralHeading,
   isTocEntry,
   isTocHeading,
   type DocumentPhase
@@ -37,6 +38,10 @@ export async function parseDocxParagraphs(filePath: string): Promise<ParsedParag
     .map((line) => line.trim())
     .filter(Boolean);
 
+  return parseParagraphLines(lines);
+}
+
+export function parseParagraphLines(lines: readonly string[]): ParsedParagraph[] {
   let phase: DocumentPhase = "frontMatter";
   let currentHeading = "未分章节";
 
@@ -60,6 +65,9 @@ export async function parseDocxParagraphs(filePath: string): Promise<ParsedParag
     }
 
     const classification = classifyParagraph({ text, index, phase });
+    if (isStructuralHeading(text)) {
+      currentHeading = text.slice(0, 60);
+    }
     if (
       classification.type === "heading" &&
       !isTocHeading(text) &&

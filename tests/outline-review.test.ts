@@ -170,9 +170,98 @@ describe("outline review helpers", () => {
       }
     ]);
 
-    expect(sections.map((section) => section.title)).toEqual(["摘 要", "1 引言"]);
+    expect(sections.map((section) => section.title)).toEqual(["摘 要", "目 录", "1 引言"]);
     expect(sections[0].paragraphIds).toEqual(["abstract-heading", "abstract-body"]);
-    expect(sections[1].paragraphIds).toEqual(["body-heading"]);
+    expect(sections[1].paragraphIds).toEqual(["toc-heading", "toc-entry"]);
+    expect(sections[2].paragraphIds).toEqual(["body-heading"]);
+  });
+
+  it("starts separate visible sections for references and acknowledgements", () => {
+    const sections = buildOutlineSections([
+      {
+        id: "summary-heading",
+        index: 0,
+        type: "heading",
+        outlinePath: "5.4 测试总结",
+        originalText: "5.4 测试总结",
+        selected: false,
+        status: "skipped",
+        skipReason: "标题默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "summary-body",
+        index: 1,
+        type: "body",
+        outlinePath: "5.4 测试总结",
+        originalText: "系统测试结果表明该系统能够满足基本需求。",
+        selected: true,
+        status: "selected",
+        skipReason: null,
+        riskLevel: "low",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "refs-heading",
+        index: 2,
+        type: "reference",
+        outlinePath: "参考文献",
+        originalText: "参考文献",
+        selected: false,
+        status: "skipped",
+        skipReason: "参考文献默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "refs-entry",
+        index: 3,
+        type: "reference",
+        outlinePath: "参考文献",
+        originalText: "MDN Web Docs. The WebSocket API (WebSockets)[EB/OL]. 2025.",
+        selected: false,
+        status: "skipped",
+        skipReason: "参考文献默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "thanks-heading",
+        index: 4,
+        type: "skipped",
+        outlinePath: "致 谢",
+        originalText: "致 谢",
+        selected: false,
+        status: "skipped",
+        skipReason: "致谢、附录等后置内容默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      },
+      {
+        id: "thanks-body",
+        index: 5,
+        type: "skipped",
+        outlinePath: "致 谢",
+        originalText: "感谢老师的教导，言辞虽然有限，但心意却在心中传递。",
+        selected: false,
+        status: "skipped",
+        skipReason: "致谢、附录等后置内容默认跳过",
+        riskLevel: "medium",
+        citationCount: 0,
+        numberingPrefix: null
+      }
+    ]);
+
+    expect(sections.map((section) => section.title)).toEqual(["5.4 测试总结", "参考文献", "致 谢"]);
+    expect(sections[0].paragraphIds).toEqual(["summary-heading", "summary-body"]);
+    expect(sections[1].paragraphIds).toEqual(["refs-heading", "refs-entry"]);
+    expect(sections[2].paragraphIds).toEqual(["thanks-heading", "thanks-body"]);
   });
 
   it("filters paragraphs for a selected section", () => {

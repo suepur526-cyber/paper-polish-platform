@@ -47,6 +47,10 @@ export function isBackMatterHeading(text: string) {
   return /^(致谢|谢辞|附录|Appendix|Acknowledgements?)$/i.test(normalized);
 }
 
+export function isStructuralHeading(text: string) {
+  return isTocHeading(text) || isReferenceHeading(text) || isBackMatterHeading(text);
+}
+
 export function isReferenceEntry(text: string) {
   const normalized = normalizeParagraphText(text);
   return (
@@ -62,7 +66,7 @@ export function isReferenceEntry(text: string) {
 
 export function isCaptionLine(text: string) {
   const normalized = normalizeParagraphText(text);
-  return /^(图|表)\s*\d+(?:\.\d+)*\s+\S{1,40}$/.test(normalized);
+  return /^(图|表)\s*\d+(?:[.\-－—]\d+)*\s*[\s　]+\S.{0,60}$/.test(normalized);
 }
 
 export function isTocEntry(text: string) {

@@ -8,6 +8,7 @@ import {
   isTocEntry,
   shouldSkipParagraph
 } from "@/lib/document/classifier";
+import { parseParagraphLines } from "@/lib/document/parser";
 
 describe("document classifier", () => {
   it("skips headings", () => {
@@ -129,6 +130,66 @@ describe("document classifier", () => {
     expect(classifyParagraph({ text: "图6.1 医生检测功能界面图", index: 630 })).toMatchObject({
       type: "skipped",
       selected: false
+    });
+  });
+
+  it("skips hyphenated figure captions from real papers", () => {
+    expect(isCaptionLine("图3-1 系统整体用例图")).toBe(true);
+    expect(isCaptionLine("表4-2 用户信息表")).toBe(true);
+    expect(classifyParagraph({ text: "图3-1 系统整体用例图", index: 300, phase: "body" })).toMatchObject({
+      type: "skipped",
+      selected: false,
+      skipReason: "图表题注默认跳过"
+    });
+  });
+
+  it("keeps contents, references and acknowledgements as separate skipped outline areas", () => {
+    const parsed = parseParagraphLines([
+      "摘 要",
+      "本文设计了一套系统。",
+      "关键词：系统；设计",
+      "目 录",
+      "1 绪论 1",
+      "1 绪论",
+      "正文第一段内容较长，应当作为正文进入待审阅列表。",
+      "参考文献",
+      "MDN Web Docs. The WebSocket API (WebSockets)[EB/OL]. 2025.",
+      "致 谢",
+      "感谢老师的教导，言辞虽然有限，但心意却在心中传递。"
+    ]);
+
+    expect(parsed[3]).toMatchObject({
+      text: "目 录",
+      type: "heading",
+      selected: false,
+      outlinePath: "目 录"
+    });
+    expect(parsed[4]).toMatchObject({
+      text: "1 绪论 1",
+      type: "skipped",
+      selected: false,
+      outlinePath: "目 录"
+    });
+    expect(parsed[7]).toMatchObject({
+      text: "参考文献",
+      type: "reference",
+      selected: false,
+      outlinePath: "参考文献"
+    });
+    expect(parsed[8]).toMatchObject({
+      type: "reference",
+      selected: false,
+      outlinePath: "参考文献"
+    });
+    expect(parsed[9]).toMatchObject({
+      text: "致 谢",
+      type: "skipped",
+      selected: false,
+      outlinePath: "致 谢"
+    });
+    expect(parsed[10]).toMatchObject({
+      selected: false,
+      outlinePath: "致 谢"
     });
   });
 });

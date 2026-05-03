@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ensureDocxPath } from "@/lib/document/doc-converter";
 import { parseDocxParagraphs } from "@/lib/document/parser";
+import { reviewDocumentStructure } from "@/lib/document/structure-reviewer";
 
 export async function POST(_request: Request, context: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await context.params;
@@ -15,7 +16,7 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
     });
 
     const docxPath = await ensureDocxPath(task.originalPath);
-    const paragraphs = await parseDocxParagraphs(docxPath);
+    const paragraphs = await reviewDocumentStructure(await parseDocxParagraphs(docxPath));
 
     await prisma.paragraphRecord.deleteMany({ where: { taskId } });
     await prisma.paragraphRecord.createMany({

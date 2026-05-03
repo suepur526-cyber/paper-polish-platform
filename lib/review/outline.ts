@@ -27,7 +27,6 @@ export type OutlineTreeNode = OutlineSection & {
 };
 
 const SELECTABLE_TYPES = new Set(["body", "abstract"]);
-
 export function canSelectParagraph(paragraph: Pick<ReviewParagraph, "type">) {
   return SELECTABLE_TYPES.has(paragraph.type);
 }
@@ -37,9 +36,9 @@ export function buildOutlineSections(paragraphs: readonly ReviewParagraph[]) {
   let current: OutlineSection | null = null;
 
   for (const paragraph of [...paragraphs].sort((a, b) => a.index - b.index)) {
-    if (paragraph.type === "heading") {
+    if (startsOutlineSection(paragraph)) {
       current = createSection(paragraph.id, paragraph.originalText);
-      if (!isHiddenOutlineHeading(paragraph.originalText)) sections.push(current);
+      sections.push(current);
     } else if (!current) {
       current = createSection("intro", "未分章节");
       sections.push(current);
@@ -140,8 +139,16 @@ function createSection(id: string, title: string): OutlineSection {
   };
 }
 
-function isHiddenOutlineHeading(title: string) {
-  return /^(目录|Contents?)$/i.test(title.replace(/\s/g, "").trim());
+function startsOutlineSection(paragraph: ReviewParagraph) {
+  if (paragraph.type === "heading") return true;
+
+  const title = paragraph.originalText.replace(/\s/g, "").trim();
+  const outlinePath = paragraph.outlinePath.replace(/\s/g, "").trim();
+  if (!title || title !== outlinePath) return false;
+  return (
+    (paragraph.type === "reference" && /^(参考文献|References)$/i.test(title)) ||
+    (paragraph.type === "skipped" && /^(致谢|谢辞|附录|Appendix)$/i.test(title))
+  );
 }
 
 export function getOutlineLevel(title: string) {
