@@ -38,6 +38,20 @@ describe("protected rewrite elements", () => {
     }
   });
 
+  it("extracts numbered item title prefixes as one protected unit", () => {
+    const examples = [
+      ["（1）性能需求：系统应具有较快的响应速度。", "（1）性能需求："],
+      ["（2）安全需求：系统需对用户密码进行加密存储。", "（2）安全需求："],
+      ["3）兼容性需求：系统前端页面应兼容主流浏览器。", "3）兼容性需求："],
+      ["4. 可维护性需求：系统代码结构应清晰规范。", "4. 可维护性需求："]
+    ];
+
+    for (const [text, prefix] of examples) {
+      expect(extractProtectedTerms(text)).toContain(prefix);
+      expect(extractVisibleProtectedPrefixes(text)).toContain(prefix);
+    }
+  });
+
   it("rejects rewritten text that removes protected structure", () => {
     const terms = extractProtectedTerms("第3章 系统需求分析：从可行性分析入手，梳理系统需求。");
 
