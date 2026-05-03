@@ -3,6 +3,8 @@ const STRUCTURAL_PREFIX_PATTERNS = [
   /^\s*\d+[.)）]\s*[^：:。；;，,\n]{1,24}[：:]/,
   /^\s*[（(]\s*[一二三四五六七八九十\d]+\s*[）)]\s*[^：:。；;，,\n\s]{2,12}(?=(?:使用|采用|需要|需|应|为|是|由|包括|支持|配置|可以|具有|具备|达到|不|能够|将|对|在|从|以|，|,))/,
   /^\s*\d+[.)）]\s*[^：:。；;，,\n\s]{2,12}(?=(?:使用|采用|需要|需|应|为|是|由|包括|支持|配置|可以|具有|具备|达到|不|能够|将|对|在|从|以|，|,))/,
+  /^\s*[（(]\s*[一二三四五六七八九十\d]+\s*[）)]\s*(?:实时监控|在线监测|状态跟踪|进度监控|数据统计|结果展示|诊断建议|信息管理|主要检测|辅助检测)/,
+  /^\s*\d+[.)）]\s*(?:实时监控|在线监测|状态跟踪|进度监控|数据统计|结果展示|诊断建议|信息管理|主要检测|辅助检测)/,
   /^\s*第[一二三四五六七八九十百千万\d]+[章节篇部分]\s*[^：:。；;，,\n]{1,32}[：:]/,
   /^\s*第[一二三四五六七八九十百千万\d]+[章节篇部分](?=(?:主要|重点|详细|系统|介绍|阐述|梳理|归纳|总结|完成|对|从|围绕|结合))/,
   /^\s*\d+(?:\.\d+){0,5}\s+[^：:。；;，,\n]{1,32}[：:]/,
@@ -12,7 +14,7 @@ const STRUCTURAL_PREFIX_PATTERNS = [
   /^\s*[①②③④⑤⑥⑦⑧⑨⑩]/
 ];
 
-const STRUCTURAL_LABEL_PREFIX_PATTERNS = STRUCTURAL_PREFIX_PATTERNS.slice(0, 8);
+const STRUCTURAL_LABEL_PREFIX_PATTERNS = STRUCTURAL_PREFIX_PATTERNS.slice(0, 10);
 const MISSING_COLON_CONTINUATION_PATTERN =
   /^(?:使用|采用|需要|需|应|为|是|由|包括|支持|配置|可以|具有|具备|达到|不|能够|将|对|在|从|以|，|,)/;
 const MISSING_COLON_BOUNDARY_WORDS = [
@@ -50,7 +52,20 @@ export function extractProtectedTerms(text: string, modelTerms: string[] = []) {
   const structuralPrefixes = extractStructuralPrefixes(text);
   const english = text.match(/[A-Z][A-Za-z0-9-]{1,}/g) ?? [];
   const citations = text.match(/\[[0-9,\-\s]+\]|〔[0-9,\-\s]+〕/g) ?? [];
-  return uniqueTerms([...structuralPrefixes, ...modelTerms, ...english, ...citations], text);
+  return uniqueTerms([...structuralPrefixes, ...expandProtectedTerms(text, modelTerms), ...english, ...citations], text);
+}
+
+export function expandProtectedTerms(text: string, terms: string[]) {
+  const structuralPrefixes = extractStructuralPrefixes(text);
+  return uniqueTerms(
+    terms.map((term) => {
+      const structuralPrefix = structuralPrefixes.find(
+        (prefix) => prefix.startsWith(term) && prefix.length > term.length
+      );
+      return structuralPrefix ?? term;
+    }),
+    text
+  );
 }
 
 export function extractVisibleProtectedPrefixes(text: string) {
@@ -141,8 +156,14 @@ function preferLongerLeadingTerms(terms: string[]) {
 }
 
 function preferLongerSegments(segments: VisibleProtectedSegment[]) {
-  return segments.filter((segment) => {
+  return segments.filter((segment, index) => {
     const trimmed = segment.text.trim();
+    if (
+      segment.source !== "model" &&
+      segments.some((other, otherIndex) => otherIndex !== index && other.source === "model" && other.text.trim() === trimmed)
+    ) {
+      return false;
+    }
     return !segments.some((other) => {
       const otherTrimmed = other.text.trim();
       return otherTrimmed.length > trimmed.length && otherTrimmed.startsWith(trimmed);

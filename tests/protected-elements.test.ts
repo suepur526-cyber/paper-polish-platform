@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  expandProtectedTerms,
   extractVisibleProtectedSegments,
   extractVisibleProtectedPrefixes,
   extractProtectedTerms,
@@ -81,6 +82,30 @@ describe("protected rewrite elements", () => {
       text: "（6）实时监控",
       kind: "model",
       source: "model"
+    });
+  });
+
+  it("expands model terms that only returned a numbering prefix", () => {
+    expect(
+      expandProtectedTerms("（6）实时监控患者检测进度与挂号办理情况。", ["（6）"])
+    ).toContain("（6）实时监控");
+  });
+
+  it("prefers model labels when model and rules protect the same segment", () => {
+    const segments = extractVisibleProtectedSegments(
+      "（3）患者信息管理模块可以查询人员基础数据和文档统计情况。",
+      ["（3）患者信息管理模块"]
+    );
+
+    expect(segments).toContainEqual({
+      text: "（3）患者信息管理模块",
+      kind: "model",
+      source: "model"
+    });
+    expect(segments).not.toContainEqual({
+      text: "（3）患者信息管理模块",
+      kind: "suspectedMissingColon",
+      source: "rule"
     });
   });
 

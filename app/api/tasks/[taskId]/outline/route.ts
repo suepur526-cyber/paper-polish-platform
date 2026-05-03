@@ -4,6 +4,7 @@ import { ensureDocxPath } from "@/lib/document/doc-converter";
 import { parseDocxParagraphs } from "@/lib/document/parser";
 import { reviewDocumentStructure } from "@/lib/document/structure-reviewer";
 import { getRewriteModelAdapter } from "@/lib/rewrite/model-adapter";
+import { expandProtectedTerms } from "@/lib/rewrite/protected-elements";
 
 export async function POST(_request: Request, context: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await context.params;
@@ -71,7 +72,10 @@ async function detectReviewModelProtectedTerms(paragraphs: Awaited<ReturnType<ty
   for (const paragraph of paragraphs) {
     if (!paragraph.selected) continue;
 
-    const terms = uniqueProtectedTerms(await safeDetectProtectedTerms(adapter, paragraph.text), paragraph.text);
+    const terms = expandProtectedTerms(
+      paragraph.text,
+      await safeDetectProtectedTerms(adapter, paragraph.text)
+    );
     if (terms.length > 0) byIndex.set(paragraph.index, terms);
   }
 
@@ -88,16 +92,4 @@ async function safeDetectProtectedTerms(
   } catch {
     return [];
   }
-}
-
-function uniqueProtectedTerms(terms: string[], text: string) {
-  const seen = new Set<string>();
-  return terms
-    .map((term) => term.trim())
-    .filter((term) => term.length > 0 && text.includes(term))
-    .filter((term) => {
-      if (seen.has(term)) return false;
-      seen.add(term);
-      return true;
-    });
 }

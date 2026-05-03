@@ -143,7 +143,8 @@ describe("TaskReview", () => {
     expect(screen.getByText("保护前缀：第1章 绪论：")).toBeTruthy();
     expect(screen.getByText("保护前缀：第一章")).toBeTruthy();
     expect(screen.getByText("保护前缀：（1）性能需求：")).toBeTruthy();
-    expect(screen.getByText("疑似漏冒号，保护：（2）客户端：")).toBeTruthy();
+    expect(screen.getByText("模型保护：（2）客户端")).toBeTruthy();
+    expect(screen.queryByText("疑似漏冒号，保护：（2）客户端：")).toBeNull();
     expect(screen.getByText("模型保护：（6）实时监控")).toBeTruthy();
   });
 
