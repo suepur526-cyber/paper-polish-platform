@@ -7,12 +7,16 @@ export type QualityPipelineInput = {
   text: string;
   numberingPrefix: string | null;
   citationCount: number;
+  modelProtectedTerms?: string[];
 };
 
 export async function rewriteParagraphWithQualityPipeline(input: QualityPipelineInput) {
   const adapter = getRewriteModelAdapter();
   const modelProtectedTerms = adapter ? await detectModelProtectedTerms(adapter, input.text) : [];
-  const protectedTerms = extractProtectedTerms(input.text, modelProtectedTerms);
+  const protectedTerms = extractProtectedTerms(input.text, [
+    ...(input.modelProtectedTerms ?? []),
+    ...modelProtectedTerms
+  ]);
   let retryCount = 0;
   let lastCandidate = input.text;
 
@@ -54,6 +58,23 @@ export async function rewriteParagraphWithQualityPipeline(input: QualityPipeline
     }
 
     retryCount += 1;
+  }
+
+  if (
+    validateNumberingPrefix(input.numberingPrefix, input.text) &&
+    validateRewriteLength(input.text, input.text) &&
+    protectedTermsValid(protectedTerms, input.text)
+  ) {
+    return {
+      rewrittenText: input.text,
+      status: "needs_manual_decision" as const,
+      retryCount,
+      validation: {
+        lengthOk: true,
+        numberingOk: true,
+        protectedTermsOk: true
+      }
+    };
   }
 
   return {

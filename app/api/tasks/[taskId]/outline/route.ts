@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { ensureDocxPath } from "@/lib/document/doc-converter";
 import { parseDocxParagraphs } from "@/lib/document/parser";
 import { reviewDocumentStructure } from "@/lib/document/structure-reviewer";
+import { getRewriteModelAdapter } from "@/lib/rewrite/model-adapter";
 
 export async function POST(_request: Request, context: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await context.params;
@@ -17,6 +18,7 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
 
     const docxPath = await ensureDocxPath(task.originalPath);
     const paragraphs = await reviewDocumentStructure(await parseDocxParagraphs(docxPath));
+    const modelProtectedTermsByIndex = await detectReviewModelProtectedTerms(paragraphs);
 
     await prisma.paragraphRecord.deleteMany({ where: { taskId } });
     await prisma.paragraphRecord.createMany({
@@ -31,7 +33,11 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
         skipReason: paragraph.skipReason,
         riskLevel: paragraph.riskLevel,
         citationCount: paragraph.citationCount,
-        numberingPrefix: paragraph.numberingPrefix
+        numberingPrefix: paragraph.numberingPrefix,
+        validationJson: JSON.stringify({
+          protectedTerms: modelProtectedTermsByIndex.get(paragraph.index) ?? [],
+          protectionSource: modelProtectedTermsByIndex.has(paragraph.index) ? "model" : "rules"
+        })
       }))
     });
 
@@ -55,4 +61,43 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
       { status: 400 }
     );
   }
+}
+
+async function detectReviewModelProtectedTerms(paragraphs: Awaited<ReturnType<typeof reviewDocumentStructure>>) {
+  const adapter = getRewriteModelAdapter();
+  const byIndex = new Map<number, string[]>();
+  if (!adapter?.detectProtectedTerms) return byIndex;
+
+  for (const paragraph of paragraphs) {
+    if (!paragraph.selected) continue;
+
+    const terms = uniqueProtectedTerms(await safeDetectProtectedTerms(adapter, paragraph.text), paragraph.text);
+    if (terms.length > 0) byIndex.set(paragraph.index, terms);
+  }
+
+  return byIndex;
+}
+
+async function safeDetectProtectedTerms(
+  adapter: NonNullable<ReturnType<typeof getRewriteModelAdapter>>,
+  text: string
+) {
+  if (!adapter.detectProtectedTerms) return [];
+  try {
+    return await adapter.detectProtectedTerms(text);
+  } catch {
+    return [];
+  }
+}
+
+function uniqueProtectedTerms(terms: string[], text: string) {
+  const seen = new Set<string>();
+  return terms
+    .map((term) => term.trim())
+    .filter((term) => term.length > 0 && text.includes(term))
+    .filter((term) => {
+      if (seen.has(term)) return false;
+      seen.add(term);
+      return true;
+    });
 }

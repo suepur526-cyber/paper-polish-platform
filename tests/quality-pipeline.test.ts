@@ -25,6 +25,17 @@ describe("quality pipeline", () => {
     expect(result.status).toBe("validated");
   });
 
+  it("reuses model protected terms detected during parsing", async () => {
+    const result = await rewriteParagraphWithQualityPipeline({
+      text: "（6）实时监控患者检测进度与挂号办理情况。",
+      numberingPrefix: "（6）",
+      citationCount: 0,
+      modelProtectedTerms: ["（6）实时监控"]
+    });
+
+    expect(result.validation.protectedTermsOk).toBe(true);
+  });
+
   it("returns a valid terminal paragraph state", async () => {
     const result = await rewriteParagraphWithQualityPipeline({
       text: "短句。",

@@ -83,11 +83,26 @@ const task = {
       skipReason: null,
       riskLevel: "low",
       citationCount: 0,
-      numberingPrefix: "（2）"
+      numberingPrefix: "（2）",
+      validationJson: JSON.stringify({ protectedTerms: ["（2）客户端"] })
+    },
+    {
+      id: "model-protected-title-1",
+      index: 6,
+      type: "body",
+      outlinePath: "功能需求",
+      originalText: "（6）实时监控患者检测进度与挂号办理情况。",
+      selected: true,
+      status: "selected",
+      skipReason: null,
+      riskLevel: "low",
+      citationCount: 0,
+      numberingPrefix: "（6）",
+      validationJson: JSON.stringify({ protectedTerms: ["（6）实时监控"] })
     },
     {
       id: "heading-2",
-      index: 6,
+      index: 7,
       type: "heading",
       outlinePath: "4.2 管理员功能模块实现",
       originalText: "4.2 管理员功能模块实现",
@@ -100,7 +115,7 @@ const task = {
     },
     {
       id: "keywords-1",
-      index: 7,
+      index: 8,
       type: "keywords",
       outlinePath: "段落 3",
       originalText: "关键词：人工智能；教学",
@@ -120,7 +135,7 @@ describe("TaskReview", () => {
 
     expect(screen.getByText("大纲审阅")).toBeTruthy();
     expect(screen.getAllByText("第一章 绪论").length).toBeGreaterThan(0);
-    expect(screen.getByText((_, element) => element?.textContent === "已选 5 / 可选 5 · 跳过 3")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === "已选 6 / 可选 6 · 跳过 3")).toBeTruthy();
     expect(screen.getByText("跳过：标题默认跳过")).toBeTruthy();
     expect(screen.getByText("引用 1")).toBeTruthy();
     expect(screen.getAllByText("编号保护：（1）").length).toBe(2);
@@ -129,6 +144,7 @@ describe("TaskReview", () => {
     expect(screen.getByText("保护前缀：第一章")).toBeTruthy();
     expect(screen.getByText("保护前缀：（1）性能需求：")).toBeTruthy();
     expect(screen.getByText("疑似漏冒号，保护：（2）客户端：")).toBeTruthy();
+    expect(screen.getByText("模型保护：（6）实时监控")).toBeTruthy();
   });
 
   it("lets users toggle selectable paragraphs only", () => {
@@ -138,7 +154,7 @@ describe("TaskReview", () => {
     fireEvent.click(bodyCheckbox);
 
     expect((bodyCheckbox as HTMLInputElement).checked).toBe(false);
-    expect(screen.getByText((_, element) => element?.textContent === "已选 4 / 可选 5 · 跳过 3")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.textContent === "已选 5 / 可选 6 · 跳过 3")).toBeTruthy();
     expect(screen.queryByRole("checkbox", { name: /关键词/ })).toBeNull();
   });
 

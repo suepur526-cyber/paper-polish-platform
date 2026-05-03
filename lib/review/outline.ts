@@ -10,6 +10,7 @@ export type ReviewParagraph = {
   riskLevel: string;
   citationCount: number;
   numberingPrefix: string | null;
+  validationJson?: string | null;
 };
 
 export type OutlineSection = {

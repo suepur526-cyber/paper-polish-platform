@@ -56,7 +56,9 @@ describe("protected rewrite elements", () => {
   it("extracts likely missing-colon numbered item titles", () => {
     const examples = [
       ["（2）客户端使用Windows系统，分辨率达到或超过1366×768。", "（2）客户端"],
-      ["（5）数据库采用MySQL 8.0以上版本。", "（5）数据库"]
+      ["（5）数据库采用MySQL 8.0以上版本。", "（5）数据库"],
+      ["（3）患者信息管理模块可以查询人员基础数据和文档统计情况。", "（3）患者信息管理模块"],
+      ["（4）主要检测模块可以自行设置置信阈值和IOU参数。", "（4）主要检测模块"]
     ];
 
     for (const [text, prefix] of examples) {
@@ -64,9 +66,22 @@ describe("protected rewrite elements", () => {
       expect(extractVisibleProtectedPrefixes(text)).toContain(prefix);
       expect(extractVisibleProtectedSegments(text)).toContainEqual({
         text: prefix,
-        kind: "suspectedMissingColon"
+        kind: "suspectedMissingColon",
+        source: "rule"
       });
     }
+  });
+
+  it("merges model detected protection into visible review segments", () => {
+    expect(
+      extractVisibleProtectedSegments("（6）实时监控患者检测进度与挂号办理情况。", [
+        "（6）实时监控"
+      ])
+    ).toContainEqual({
+      text: "（6）实时监控",
+      kind: "model",
+      source: "model"
+    });
   });
 
   it("rejects rewritten text that removes protected structure", () => {

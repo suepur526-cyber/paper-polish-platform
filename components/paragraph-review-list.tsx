@@ -38,7 +38,10 @@ export function ParagraphReviewList({
       {paragraphs.map((paragraph) => {
         const selectable = canSelectParagraph(paragraph);
         const checked = Boolean(selectedMap[paragraph.id]);
-        const protectedSegments = extractVisibleProtectedSegments(paragraph.originalText);
+        const protectedSegments = extractVisibleProtectedSegments(
+          paragraph.originalText,
+          readModelProtectedTerms(paragraph.validationJson)
+        );
         const protectedPrefixes = protectedSegments.map((segment) => segment.text);
         return (
           <article key={paragraph.id} className="min-w-0 rounded-md border bg-white px-3 py-2">
@@ -86,6 +89,17 @@ export function ParagraphReviewList({
 }
 
 function ProtectedSegmentBadge({ segment }: { segment: VisibleProtectedSegment }) {
+  if (segment.kind === "model") {
+    return (
+      <span
+        className="rounded border border-sky-200 bg-sky-50 px-2 py-0.5 font-medium text-sky-800"
+        title="大模型在解析复检阶段识别出的保护片段；润色时会强制保留"
+      >
+        模型保护：{segment.text}
+      </span>
+    );
+  }
+
   if (segment.kind === "suspectedMissingColon") {
     return (
       <span
@@ -105,6 +119,18 @@ function ProtectedSegmentBadge({ segment }: { segment: VisibleProtectedSegment }
       保护前缀：{segment.text}
     </span>
   );
+}
+
+function readModelProtectedTerms(validationJson?: string | null) {
+  if (!validationJson) return [];
+  try {
+    const parsed = JSON.parse(validationJson) as { protectedTerms?: unknown };
+    return Array.isArray(parsed.protectedTerms)
+      ? parsed.protectedTerms.filter((term): term is string => typeof term === "string")
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 function HighlightedProtectedText({

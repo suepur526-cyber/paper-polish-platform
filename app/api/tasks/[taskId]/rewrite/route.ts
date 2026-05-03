@@ -20,7 +20,8 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
     const result = await rewriteParagraphWithQualityPipeline({
       text: paragraph.originalText,
       numberingPrefix: paragraph.numberingPrefix,
-      citationCount: paragraph.citationCount
+      citationCount: paragraph.citationCount,
+      modelProtectedTerms: readModelProtectedTerms(paragraph.validationJson)
     });
 
     await prisma.paragraphRecord.update({
@@ -41,4 +42,16 @@ export async function POST(_request: Request, context: { params: Promise<{ taskI
   });
 
   return NextResponse.json(updated);
+}
+
+function readModelProtectedTerms(validationJson: string | null) {
+  if (!validationJson) return [];
+  try {
+    const parsed = JSON.parse(validationJson) as { protectedTerms?: unknown };
+    return Array.isArray(parsed.protectedTerms)
+      ? parsed.protectedTerms.filter((term): term is string => typeof term === "string")
+      : [];
+  } catch {
+    return [];
+  }
 }
