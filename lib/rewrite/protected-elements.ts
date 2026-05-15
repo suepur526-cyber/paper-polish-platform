@@ -1,0 +1,200 @@
+const STRUCTURAL_PREFIX_PATTERNS = [
+  /^\s*[（(]\s*[一二三四五六七八九十\d]+\s*[）)]\s*[^：:。；;，,\n]{1,24}[：:]/,
+  /^\s*\d+[.)）]\s*[^：:。；;，,\n]{1,24}[：:]/,
+  /^\s*[（(]\s*[一二三四五六七八九十\d]+\s*[）)]\s*[^：:。；;，,\n\s]{2,12}(?=(?:使用|采用|需要|需|应|为|是|由|包括|支持|配置|可以|具有|具备|达到|不|能够|将|对|在|从|以|，|,))/,
+  /^\s*\d+[.)）]\s*[^：:。；;，,\n\s]{2,12}(?=(?:使用|采用|需要|需|应|为|是|由|包括|支持|配置|可以|具有|具备|达到|不|能够|将|对|在|从|以|，|,))/,
+  /^\s*[（(]\s*[一二三四五六七八九十\d]+\s*[）)]\s*(?:实时监控|在线监测|状态跟踪|进度监控|数据统计|结果展示|诊断建议|信息管理|主要检测|辅助检测)/,
+  /^\s*\d+[.)）]\s*(?:实时监控|在线监测|状态跟踪|进度监控|数据统计|结果展示|诊断建议|信息管理|主要检测|辅助检测)/,
+  /^\s*第[一二三四五六七八九十百千万\d]+[章节篇部分]\s*[^：:。；;，,\n]{1,32}[：:]/,
+  /^\s*第[一二三四五六七八九十百千万\d]+[章节篇部分](?=(?:主要|重点|详细|系统|介绍|阐述|梳理|归纳|总结|完成|对|从|围绕|结合))/,
+  /^\s*\d+(?:\.\d+){0,5}\s+[^：:。；;，,\n]{1,32}[：:]/,
+  /^\s*[一二三四五六七八九十]+[、.．]\s*[^：:。；;，,\n]{1,32}[：:]/,
+  /^\s*[（(]\s*[一二三四五六七八九十\d]+\s*[）)]/,
+  /^\s*\d+[.)）]\s*/,
+  /^\s*[①②③④⑤⑥⑦⑧⑨⑩]/
+];
+
+const STRUCTURAL_LABEL_PREFIX_PATTERNS = STRUCTURAL_PREFIX_PATTERNS.slice(0, 10);
+const MISSING_COLON_CONTINUATION_PATTERN =
+  /^(?:使用|采用|需要|需|应|为|是|由|包括|支持|配置|可以|具有|具备|达到|不|能够|将|对|在|从|以|，|,)/;
+const MISSING_COLON_BOUNDARY_WORDS = [
+  "使用",
+  "采用",
+  "需要",
+  "可以",
+  "具有",
+  "具备",
+  "能够",
+  "包括",
+  "支持",
+  "配置",
+  "达到",
+  "需",
+  "应",
+  "为",
+  "是",
+  "由",
+  "不",
+  "将",
+  "对",
+  "在",
+  "从",
+  "以"
+];
+
+export type VisibleProtectedSegment = {
+  text: string;
+  kind: "protected" | "suspectedMissingColon" | "model";
+  source?: "rule" | "model";
+};
+
+export function extractProtectedTerms(text: string, modelTerms: string[] = []) {
+  const structuralPrefixes = extractStructuralPrefixes(text);
+  const english = text.match(/[A-Z][A-Za-z0-9-]{1,}/g) ?? [];
+  const citations = text.match(/\[[0-9,\-\s]+\]|〔[0-9,\-\s]+〕/g) ?? [];
+  return uniqueTerms([...structuralPrefixes, ...expandProtectedTerms(text, modelTerms), ...english, ...citations], text);
+}
+
+export function expandProtectedTerms(text: string, terms: string[]) {
+  const structuralPrefixes = extractStructuralPrefixes(text);
+  return uniqueTerms(
+    terms.map((term) => {
+      const structuralPrefix = structuralPrefixes.find(
+        (prefix) => prefix.startsWith(term) && prefix.length > term.length
+      );
+      return structuralPrefix ?? term;
+    }),
+    text
+  );
+}
+
+export function extractVisibleProtectedPrefixes(text: string) {
+  return extractStructuralPrefixes(text, STRUCTURAL_LABEL_PREFIX_PATTERNS);
+}
+
+export function extractVisibleProtectedSegments(
+  text: string,
+  modelTerms: string[] = []
+): VisibleProtectedSegment[] {
+  const ruleSegments: VisibleProtectedSegment[] = extractVisibleProtectedPrefixes(text).map((term) => ({
+    text: term,
+    kind: isSuspectedMissingColonTerm(text, term) ? "suspectedMissingColon" : "protected",
+    source: "rule" as const
+  }));
+  const modelSegments = uniqueTerms(modelTerms, text).map((term) => ({
+    text: term,
+    kind: "model" as const,
+    source: "model" as const
+  }));
+
+  return preferLongerSegments([...modelSegments, ...ruleSegments]);
+}
+
+export function protectedTermsRetained(terms: string[], rewritten: string) {
+  return terms.every((term) => rewritten.includes(term));
+}
+
+export function protectedTermsStayInOrder(terms: string[], rewritten: string) {
+  let cursor = 0;
+  for (const term of terms) {
+    const index = rewritten.indexOf(term, cursor);
+    if (index < 0) return false;
+    cursor = index + term.length;
+  }
+  return true;
+}
+
+export function protectedLeadingTermsStayLeading(terms: string[], rewritten: string) {
+  const leading = terms.filter((term) => isLeadingStructuralTerm(term));
+  return leading.every((term) => rewritten.trimStart().startsWith(term));
+}
+
+export function protectedTermsValid(terms: string[], rewritten: string) {
+  return (
+    protectedTermsRetained(terms, rewritten) &&
+    protectedTermsStayInOrder(terms, rewritten) &&
+    protectedLeadingTermsStayLeading(terms, rewritten)
+  );
+}
+
+function extractStructuralPrefixes(text: string, patterns = STRUCTURAL_PREFIX_PATTERNS) {
+  const terms: string[] = [];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[0]) terms.push(normalizeStructuralPrefix(text, match[0].trimStart()));
+  }
+  return preferLongerLeadingTerms(terms);
+}
+
+function uniqueTerms(terms: string[], sourceText: string) {
+  const seen = new Set<string>();
+  const normalized = terms
+    .map((term) => term.trim())
+    .filter((term) => term.length > 0 && sourceText.includes(term));
+
+  return normalized.filter((term) => {
+    if (seen.has(term)) return false;
+    seen.add(term);
+    return true;
+  }).filter((term, _index, allTerms) => {
+    return !allTerms.some((other) => other.length > term.length && other.startsWith(term));
+  });
+}
+
+function isLeadingStructuralTerm(term: string) {
+  return STRUCTURAL_PREFIX_PATTERNS.some((pattern) => pattern.test(term));
+}
+
+function preferLongerLeadingTerms(terms: string[]) {
+  return terms.filter((term) => {
+    const trimmed = term.trim();
+    return !terms.some((other) => {
+      const otherTrimmed = other.trim();
+      return otherTrimmed.length > trimmed.length && otherTrimmed.startsWith(trimmed);
+    });
+  });
+}
+
+function preferLongerSegments(segments: VisibleProtectedSegment[]) {
+  return segments.filter((segment, index) => {
+    const trimmed = segment.text.trim();
+    if (
+      segment.source !== "model" &&
+      segments.some((other, otherIndex) => otherIndex !== index && other.source === "model" && other.text.trim() === trimmed)
+    ) {
+      return false;
+    }
+    return !segments.some((other) => {
+      const otherTrimmed = other.text.trim();
+      return otherTrimmed.length > trimmed.length && otherTrimmed.startsWith(trimmed);
+    });
+  });
+}
+
+function normalizeStructuralPrefix(sourceText: string, term: string) {
+  const source = sourceText.trimStart();
+  if (!source.startsWith(term) || /[：:]$/.test(term)) return term;
+
+  for (const word of MISSING_COLON_BOUNDARY_WORDS) {
+    if (word.length < 2 || !term.endsWith(word[0])) continue;
+    const continuation = source.slice(term.length);
+    if (word.slice(1) && source.slice(term.length - 1).startsWith(word)) {
+      return term.slice(0, -1).trimEnd();
+    }
+    if (!word.slice(1) && MISSING_COLON_CONTINUATION_PATTERN.test(continuation)) {
+      return term;
+    }
+  }
+
+  return term;
+}
+
+function isSuspectedMissingColonTerm(sourceText: string, term: string) {
+  if (/[：:]$/.test(term)) return false;
+
+  const source = sourceText.trimStart();
+  if (!source.startsWith(term)) return false;
+
+  const continuation = source.slice(term.length);
+  return MISSING_COLON_CONTINUATION_PATTERN.test(continuation);
+}

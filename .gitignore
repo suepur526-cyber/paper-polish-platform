@@ -1,2 +1,11 @@
 .superpowers/
 .worktrees/
+node_modules/
+.next/
+.env
+storage/
+prisma/dev.db*
+dev-server*.log
+dev-server.pid
+qa-sample.docx
+.gstack/
